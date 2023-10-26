@@ -5,21 +5,23 @@ Properties {
 }
 
 SubShader {
-	Tags { "RenderType"="Opaque" "Queue"="Transparent+50" }
-	Blend SrcAlpha OneMinusSrcAlpha
-	Cull Off
-	AlphaToMask On
-	
-	Pass {  
-		CGPROGRAM
+
+	CGINCLUDE
 			#include "UnityCG.cginc"
 			#pragma vertex VertexProgram
 			#pragma geometry GeometryProgram
 			#pragma fragment frag
 			#pragma target 5.0
-			
+			#pragma multi_compile_fwdadd_fullshadows
+
 			#include "Assets/cnlohr/Shaders/hashwithoutsine/hashwithoutsine.cginc"
 
+			#include "UnityCG.cginc"
+			#include "AutoLight.cginc"
+			#include "Lighting.cginc"
+			#include "UnityShadowLibrary.cginc"
+			#include "UnityPBSLighting.cginc"
+			
 			struct appdata {
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
@@ -33,6 +35,7 @@ SubShader {
 				float4 vertex : SV_POSITION;
 				float2 tc : TEXCOORD0;
 				float4 color : COLOR;
+				float4 hitworld : HIT0;
 				UNITY_FOG_COORDS(1)
 				UNITY_VERTEX_OUTPUT_STEREO
 				UNITY_VERTEX_INPUT_INSTANCE_ID
@@ -94,11 +97,15 @@ SubShader {
 				float4 color = _GeoData.Load( uint4( 2, coord, 0 ) );
 				float4 rot = _GeoData.Load( uint4( 3, coord, 0 ) );
 				vp.xy = vp;
-								
-				o[0].vertex = UnityObjectToClipPos( float4( Transform( vp.xyz, scale, rot, float2( -1, -1 ) ), 1.0 ) );
-				o[1].vertex = UnityObjectToClipPos( float4( Transform( vp.xyz, scale, rot, float2( -1,  1 ) ), 1.0 ) );
-				o[2].vertex = UnityObjectToClipPos( float4( Transform( vp.xyz, scale, rot, float2(  1, -1 ) ), 1.0 ) );
-				o[3].vertex = UnityObjectToClipPos( float4( Transform( vp.xyz, scale, rot, float2(  1,  1 ) ), 1.0 ) );
+
+				o[0].hitworld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2( -1, -1 ) ), 1.0 ) );
+				o[1].hitworld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2( -1,  1 ) ), 1.0 ) );
+				o[2].hitworld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2(  1, -1 ) ), 1.0 ) );
+				o[3].hitworld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2(  1,  1 ) ), 1.0 ) );
+				o[0].vertex = mul(UNITY_MATRIX_VP, o[0].hitworld );
+				o[1].vertex = mul(UNITY_MATRIX_VP, o[1].hitworld );
+				o[2].vertex = mul(UNITY_MATRIX_VP, o[2].hitworld );
+				o[3].vertex = mul(UNITY_MATRIX_VP, o[3].hitworld );
 				
 				o[0].color = color;
 				o[1].color = color;
@@ -126,8 +133,66 @@ SubShader {
 				inten *= 3.0;
 				float fakeAlpha = inten - chash13( float3( _Time.y, i.tc.xy ) * 100.0 );
 				mask = ( 1u << ((uint)(fakeAlpha*GetRenderTargetSampleCount() + 0.5)) ) - 1;
-				return float4( i.color.rgb, 1.0 );
+				
+				
+				// TODO: Fix shadow.
+				
+				float4 clipPos = mul(UNITY_MATRIX_VP, i.hitworld );
+				struct shadowonly
+				{
+					float4 pos;
+					float4 _LightCoord;
+					float4 _ShadowCoord;
+				} so;
+				so._LightCoord = 0.;
+				so.pos = clipPos;
+				so._ShadowCoord  = 0;
+				UNITY_TRANSFER_SHADOW( so, 0. );
+				float attenuation = LIGHT_ATTENUATION( so );
+
+				if( 1 )
+				{
+					//GROSS: We actually need to sample adjacent pixels. 
+					//sometimes we are behind another object but our color.
+					//shows through because of the mask.
+					so.pos = clipPos + float4( 1/_ScreenParams.x, 0.0, 0.0, 0.0 );
+					UNITY_TRANSFER_SHADOW( so, 0. );
+					attenuation = min( attenuation, LIGHT_ATTENUATION( so ) );
+					so.pos = clipPos + float4( -1/_ScreenParams.x, 0.0, 0.0, 0.0 );
+					UNITY_TRANSFER_SHADOW( so, 0. );
+					attenuation = min( attenuation, LIGHT_ATTENUATION( so ) );
+					so.pos = clipPos + float4( 0, 1/_ScreenParams.y, 0.0, 0.0 );
+					UNITY_TRANSFER_SHADOW( so, 0. );
+					attenuation = min( attenuation, LIGHT_ATTENUATION( so ) );
+					so.pos = clipPos + float4( 0, 1/_ScreenParams.y, 0.0, 0.0 );
+					UNITY_TRANSFER_SHADOW( so, 0. );
+					attenuation = min( attenuation, LIGHT_ATTENUATION( so ) );
+				}
+				
+				float3 color = i.color.rgb;
+				//color = i.hitworld.rgb;
+				color *= ( attenuation * 0.5 + 0.5); 
+				return float4( color, 1.0 );
 			}
+
+	ENDCG
+
+
+
+	Pass {
+		Tags {"LightMode" = "ShadowCaster"}
+		Cull Off
+		AlphaToMask On
+		CGPROGRAM
+		ENDCG
+	}
+	
+
+	Pass { 
+		Tags { "RenderType"="Opaque" "LightMode"="ForwardBase" }
+		Cull Off
+		AlphaToMask On
+		CGPROGRAM
 		ENDCG
 	}
 }
