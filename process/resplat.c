@@ -3,6 +3,8 @@
 #include <string.h>
 #include <math.h>
 
+#include "unitytexturewriter.h"
+
 struct
 {
 	int pos[3];
@@ -89,9 +91,10 @@ int main( int argc, char ** argv )
 	for( i = 0; i < sizeof( offsetList ) / sizeof( offsetList.pos[0] ); i++ )
 		offsetListAsInt[i] = -1;
 
-	if( argc != 3 )
+	if( argc != 5 )
 	{
-		fprintf( stderr, "Error: Usage: resplat [.ply file] [out, .ply file]\n" );
+		fprintf( stderr, "Error: Usage: resplat [.ply file] [out, .ply file] [out, .asset image file] [out, .asset mesh file]\n" );
+		fprintf( stderr, "WARNING: PLY file output is currently broken.\n" );
 		return -5;
 	}
 
@@ -225,9 +228,9 @@ int main( int argc, char ** argv )
 		si->pos[1] = buffer[ offsetList.pos[1] ];
 		si->pos[2] = buffer[ offsetList.pos[2] ];
 
-		si->scale[0] = exp( buffer[ offsetList.scale[0] ] );
-		si->scale[1] = exp( buffer[ offsetList.scale[1] ] );
-		si->scale[2] = exp( buffer[ offsetList.scale[2] ] );
+		si->scale[0] = buffer[ offsetList.scale[0] ];
+		si->scale[1] = buffer[ offsetList.scale[1] ];
+		si->scale[2] = buffer[ offsetList.scale[2] ];
 
 
 		const float SH_C0 = 0.28209479177387814;
@@ -281,10 +284,100 @@ int main( int argc, char ** argv )
 	fprintf( fOut, "property list uint uint vertex_indices\n" );
 	fprintf( fOut, "end_header\n" );
 
+	{
+		int w = 1024;
+		int h = ( splatsInCount + w - 1 ) / w;
+		int d = 4;
+		int size = w * h * sizeof( float ) * d * 4;
+		uint8_t * pData = calloc( size, 1 );
+		int x, y;
+		int p = 0;
+		printf( "Output asset dimensions: %d x %d x %d\n", w, h, d );
+		for( y = 0; y < h; y++ )
+		for( x = 0; x < w; x++ )
+		{
+			if( p < splatsInCount )
+			{
+				splatIn * si = &splatsIn[p];
+				float * fO = (float*)&pData[4*((x+y*w)*sizeof( float ))*d];
+				fO[0] = si->pos[0];
+				fO[1] = si->pos[1];
+				fO[2] = si->pos[2];
+				fO[3] = 0.0;
+				fO[4] = si->scale[0];
+				fO[5] = si->scale[1];
+				fO[6] = si->scale[2];
+				fO[7] = 0.0;
+				fO[8] = si->color[0];
+				fO[9] = si->color[1];
+				fO[10] = si->color[2];
+				fO[11] = si->opacity;
+				fO[12] = si->rot[0];
+				fO[13] = si->rot[1];
+				fO[14] = si->rot[2];
+				fO[15] = si->rot[3];
+			}
+			p++;
+		}
+		WriteUnityImageAsset( argv[3], pData, size, d, w, h, UTE_RGBA_FLOAT | UTE_FLAG_IS_3D );
+	}
+	
+	FILE * fFM = fopen( argv[4], "w" );
+	fprintf( fFM,
+		"%%YAML 1.1\n"
+		"%%TAG !u! tag:unity3d.com,2011:\n"
+		"--- !u!43 &4300000\n"
+		"Mesh:\n"
+		"  m_ObjectHideFlags: 0\n"
+		"  m_CorrespondingSourceObject: {fileID: 0}\n"
+		"  m_PrefabInstance: {fileID: 0}\n"
+		"  m_PrefabAsset: {fileID: 0}\n"
+		"  m_Name: SlapSplatMesh\n"
+		"  serializedVersion: 10\n"
+		"  m_SubMeshes:\n"
+		"  - serializedVersion: 2\n"
+		"    indexCount: %d\n"
+		"    topology: 5\n"
+		"    vertexCount: %d\n"
+		"    localAABB:\n"
+		"      m_Center: {x: 0, y: 0, z: 0}\n"
+		"      m_Extent: {x: 0, y: 0, z: 0}\n"
+		"  m_IsReadable: 1\n"
+		"  m_KeepVertices: 1\n"
+		"  m_KeepIndices: 1\n"
+		"  m_IndexFormat: 0\n"
+		"  m_IndexBuffer: ", splatsInCount, 1 );
+			// Repeat 0000 # of indices
+	for( v = 0; v < splatsInCount; v++ )
+	{
+		fprintf( fFM, "0000" );
+	}
+	fprintf( fFM, "\n" );
+	fprintf( fFM,
+		"  m_VertexData:\n"
+		"    serializedVersion: 3\n"
+		"    m_VertexCount: %d\n"
+		"    m_Channels:\n"
+		"    - stream: 0\n"
+		"      offset: 0\n"
+		"      format: 0\n"
+		"      dimension: 3\n"
+		"    m_DataSize: 600\n"
+		"    _typelessdata: 000000000000000000000000\n"
+		"  m_LocalAABB:\n"
+		"    m_Center: {x: 0, y: 28, z: 15}\n"
+		"    m_Extent: {x: 40, y: 40, z: 60}\n"
+		"  m_MeshOptimizationFlags: 1\n", 1 );
+	fclose( fFM );
+
+
+	return 0;
+
+
 	for( v = 0; v < splatsInCount; v++ )
 	{
 		splatIn * si = &splatsIn[v];
-			
+
 		float v1[7] = { 1, 1, 0, si->color[0], si->color[1], si->color[2] };
 		float v2[7] = { -1, 1, 0, si->color[0], si->color[1], si->color[2] };
 		float v3[7] = { 1, -1, 0, si->color[0], si->color[1], si->color[2] };
