@@ -63,7 +63,7 @@ SubShader {
 				return mul( v, R);
 			}
 			
-			float3 Transform( float3 pos, float3 scale, float4 rot, float2 h, float opacity )
+			float3 Transform( float3 pos, float3 scale, float4 rot, float2 h, inout float opacity )
 			{
 				// from  https://github.com/antimatter15/splat/blob/main/main.js
 				//rot = rot.xyzw;
@@ -72,14 +72,16 @@ SubShader {
 				//	rot = normalize( rot );
 
 				rot = rot.wxyz;
-				//rot.xyz = pow( rot.xyz, 2.0 );
 				float qLen = length( rot );
 				rot /= qLen;
 				
-				//scale = 1.0/(1.0+exp( -scale ));
 				scale = exp(scale);
 				scale *= 2.5;
+				//scale *= opacity;
+				opacity = 1.0;
 				
+				scale = abs( scale );
+
 				float3 fvv;
 				if( abs( scale.x ) < abs( scale.y ) )
 				{
@@ -96,6 +98,33 @@ SubShader {
 						fvv = float3( h.x, h.y, 0.0 );
 				}
 				
+				// XXX For youtube - show what happens when you compress scale to 8 bits.
+				if( frac( _Time.y ) > 0.5 )
+				{
+					// Position = 6 bytes
+					// Scale = 2 bytes
+					// Rotation = 3 bytes
+					// Color = 3 bytes
+
+					// 2 bytes extra???
+
+					int3 ipos = round( pos * 1000.0 );
+					pos = ipos / 1000.0;
+
+					// from -7 to +1 are valid.
+					float3 logscale = log(scale)/log(2.71828);
+					int3 encodedscale = (logscale + 7.0) * 32.0 + 0.5;
+					encodedscale = min( encodedscale, 255 );
+					encodedscale = max( encodedscale, 0 );
+					scale = exp(encodedscale/32.0-7.0);
+
+					// Rotation = 3 bytes
+					int3 encodedRot = ((int3)round(rot.yzw * 127));
+					rot.yzw = (encodedRot)/127.0;
+					rot.x = sqrt(1 - dot( rot.yzw, rot.yzw ));
+					rot = normalize( rot );
+				}
+
 				fvv *= scale;
 				float3 hprime = Rotate( fvv, rot );
 
@@ -137,6 +166,9 @@ SubShader {
 				float4 rot = _GeoData.Load( uint4( 3, coord, 0 ) );
 				vp.xy = vp;
 
+				if( color.a < 0.3 ) return;
+				if( color.r < 0.0 || color.g < 0.0 || color.b < 0.0 ) return;
+
 				o[0].hitworld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2( -1, -1 ), color.a ), 1.0 ) );
 				o[1].hitworld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2( -1,  1 ), color.a ), 1.0 ) );
 				o[2].hitworld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2(  1, -1 ), color.a ), 1.0 ) );
@@ -151,9 +183,6 @@ SubShader {
 				o[2].color = color;
 				o[3].color = color;
 				
-				if( color.a < 0.5 ) return;
-				if( color.r < 0.0 || color.g < 0.0 || color.b < 0.0 ) return;
-
 				UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(o[0]);
 				UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(o[1]);
 				UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(o[2]);

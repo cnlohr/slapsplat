@@ -1,2 +1,2 @@
-tcc -o resplat.exe resplat.c
-resplat.exe splat.ply geo.ply ..\Assets\slapsplat\data.asset ..\Assets\slapsplat\mesh.asset
+tcc -o resplat2.exe resplat2.c
+resplat2.exe splat.ply sgeo.ply ..\Assets\slapsplat\data2.asset ..\Assets\slapsplat\mesh2.asset
