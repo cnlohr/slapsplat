@@ -66,14 +66,8 @@ SubShader {
 			float3 Transform( float3 pos, float3 scale, float4 rot, float2 h, inout float opacity )
 			{
 				// from  https://github.com/antimatter15/splat/blob/main/main.js
-				//rot = rot.xyzw;
-				//rot.w *= -1;
-				//rot = rot.yzwx;
-				//	rot = normalize( rot );
 
-				rot = rot.wxyz;
-				float qLen = length( rot );
-				rot /= qLen;
+				rot = normalize( rot.xyzw );
 				
 #if 0
 				scale = exp(scale);
@@ -138,18 +132,19 @@ SubShader {
 				uint2 coord = uint2( prim % width, prim / width );
 
 				uint4 gpdata = asuint( _GeoData.Load( int3( coord, 0 ) ) );
-				float4 rot = float4( 1.0, 0.0, 0.0, 0.0 );
-				float4 color = float4( 1.0, 1.0, 1.0, 1.0 );
 
 				int3 gpv = int3( gpdata.x << 16, gpdata.x & 0xffff0000, gpdata.y << 16 ) >> 16;
 				float3 vp = float3( gpv / 1000.0 );
 
-				uint3 scaleraw = uint3( ( gpdata.y & 0xff00 )>>8, (gpdata.y & 0xff), (gpdata.z >> 24) );
+				uint3 scaleraw = uint3( ( gpdata.y & 0xff0000 )>>16, (gpdata.y >> 24), (gpdata.z & 0xff) );
 				float3 scale = exp(( float3(scaleraw) - 0.5) / 32.0 - 7.0);
 				
-				//		so->sx = log(scale2s[0])/log(2.71828) + 7.0 * 32.0 + 0.5;
+				//Force overflow to fix signed issue.
+				int3 rotraw = int3( ( gpdata.z >> 8 ) & 0xff, (gpdata.z >> 16) & 0xff, gpdata.z >> 24 ) * 16777216;
+				float4 rot = float4( 0.0, rotraw / ( 127.0 * 16777216.0 ) );
+				rot.x = sqrt(1.0 - dot( rot.yzw, rot.yzw ));
 
-
+				float4 color = float4( uint3( ( gpdata.w >> 0) & 0xff, (gpdata.w >> 8) & 0xff, (gpdata.w >> 16) & 0xff ) / 255.0, 1.0 );
 
 				if( color.a < 0.3 ) return;
 				if( color.r < 0.0 || color.g < 0.0 || color.b < 0.0 ) return;
@@ -262,7 +257,6 @@ SubShader {
 			
 			float3 color = pow( i.color.rgb, 1.4 );
 			
-			color = ( asuint( _GeoData.Load( uint3( i.tc.xy*100.0, 0 ) ) ).xyz % 65536 ) / 65536.0;
 			//color = i.hitworld.rgb;
 			color *= ( attenuation * 0.8 + 0.2); 
 			return float4( color, 1.0 );

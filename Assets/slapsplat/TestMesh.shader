@@ -42,7 +42,7 @@ SubShader {
 				UNITY_SETUP_INSTANCE_ID( v );
 				v2g t;
 				UNITY_INITIALIZE_OUTPUT(v2g, t);
-				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(t);
 				t.nv = vid; // Not actually used (we only have 1)
 				return t;
 			}

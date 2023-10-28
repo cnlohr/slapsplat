@@ -328,6 +328,7 @@ int main( int argc, char ** argv )
 		if( si->color[1] < 0.0 ) continue;
 		if( si->color[2] < 0.0 ) continue;
 
+		// from  https://github.com/antimatter15/splat/blob/main/main.js
 		float realrot[4] = { si->rot[3], si->rot[0], si->rot[1], si->rot[2] }; // Why??
 		float rrscale = 1./sqrtf( realrot[0] * realrot[0] + realrot[1] * realrot[1] + realrot[2] * realrot[2] + realrot[3] * realrot[3] );
 		realrot[0] *= rrscale;
@@ -351,43 +352,72 @@ int main( int argc, char ** argv )
 		so->z = oz;
 
 		float scale2s[3] = { realscale[0], realscale[1], realscale[2] };
-		
-		// Make sure Z is the smallest scale.
-		if( realscale[0] < realscale[2] )
-		{
-			// around Y
-			float quatRotXZ[4] = {0.70710678, 0.0, 0.70710678, 0.0 };
-			mathRotateVectorByQuaternion( scale2s, quatRotXZ, scale2s );
-			mathQuatApply(realrot, realrot, quatRotXZ);
-		}
 
-		if( realscale[1] < realscale[2] )
+		// Make sure Z is the smallest scale.
+		if( scale2s[1] < scale2s[2] )
 		{
 			// around X
 			float quatRotYZ[4] = {0.70710678, 0.70710678, 0.0, 0.0 };
 			mathRotateVectorByQuaternion( scale2s, quatRotYZ, scale2s );
 			mathQuatApply(realrot, realrot, quatRotYZ);
+			scale2s[0] = absf( scale2s[0] );
+			scale2s[1] = absf( scale2s[1] );
+			scale2s[2] = absf( scale2s[2] );
+		}
+
+		// Make sure Z is the smallest scale.
+		if( scale2s[0] < scale2s[2] )
+		{
+			// around Y
+			float quatRotXZ[4] = {0.70710678, 0.0, 0.70710678, 0.0 };
+			mathRotateVectorByQuaternion( scale2s, quatRotXZ, scale2s );
+			mathQuatApply(realrot, realrot, quatRotXZ);
+			scale2s[0] = absf( scale2s[0] );
+			scale2s[1] = absf( scale2s[1] );
+			scale2s[2] = absf( scale2s[2] );
 		}
 		
-		if( realscale[0] < realscale[1] )
+		// Make sure Y is smaller than X
+		if( scale2s[0] < scale2s[1] )
 		{
 			// around Z
 			float quatRotXY[4] = {0.70710678, 0.0, 0.0, 0.70710678 };
 			mathRotateVectorByQuaternion( scale2s, quatRotXY, scale2s );
 			mathQuatApply(realrot, realrot, quatRotXY);
+			scale2s[0] = absf( scale2s[0] );
+			scale2s[1] = absf( scale2s[1] );
+			scale2s[2] = absf( scale2s[2] );
 		}
 
-		scale2s[0] = absf( scale2s[0] );
-		scale2s[1] = absf( scale2s[1] );
-		scale2s[2] = absf( scale2s[2] );
-
-		so->sx = ( log(scale2s[0])/log(2.71828) + 7.0 ) * 32.0 + 0.5;
-		so->sy = ( log(scale2s[1])/log(2.71828) + 7.0 ) * 32.0 + 0.5;
-		so->sz = ( log(scale2s[2])/log(2.71828) + 7.0 ) * 32.0 + 0.5;
+		int isx = ( log(scale2s[0])/log(2.71828) + 7.0 ) * 32.0 + 0.5;
+		int isy = ( log(scale2s[1])/log(2.71828) + 7.0 ) * 32.0 + 0.5;
+		int isz = ( log(scale2s[2])/log(2.71828) + 7.0 ) * 32.0 + 0.5;
+		if( isx > 255 ) isx = 255;
+		if( isy > 255 ) isy = 255;
+		if( isz > 255 ) isz = 255;
+		if( isx < 0 ) isx = 0;
+		if( isy < 0 ) isx = 0;
+		if( isz < 0 ) isz = 0;
+		so->sx = isx;
+		so->sy = isy;
+		so->sz = isz;
+		
+		//printf( "%3d %3d %3d %f %f %f from %f %f %f\n", isx, isy, isz, scale2s[0], scale2s[1], scale2s[2], realscale[0], realscale[1], realscale[2] );
 		// Is this the right way??? XXX TODO CHECK ME.
-		so->rx = realrot[0] * 127 - 0.5;
-		so->ry = realrot[1] * 127 - 0.5;
-		so->rz = realrot[2] * 127 - 0.5;
+		if( realrot[0] < 0 )
+		{
+			realrot[1] *= -1;
+			realrot[2] *= -1;
+			realrot[3] *= -1;
+		}
+
+		int rrx = realrot[1] * 127 - 0.5;
+		int rry = realrot[2] * 127 - 0.5;
+		int rrz = realrot[3] * 127 - 0.5;
+		so->rx = rrx;
+		so->ry = rry;
+		so->rz = rrz;
+		//printf( "%4d %4d %4d\n", rrx,rry, rrz );
 
 		int cr = si->color[0] * 255.0;		if( cr > 255 ) cr = 255;
 		int cg = si->color[1] * 255.0;		if( cg > 255 ) cg = 255;
