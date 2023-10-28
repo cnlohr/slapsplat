@@ -136,7 +136,7 @@ SubShader {
 				UNITY_SETUP_INSTANCE_ID( v );
 				v2g t;
 				UNITY_INITIALIZE_OUTPUT(v2g, t);
-				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(v);
 				t.nv = vid;
 				return t;
 			}

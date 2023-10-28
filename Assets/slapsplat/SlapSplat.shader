@@ -2,6 +2,7 @@
 Shader "SlapSplat/SlapSplat" {
 Properties {
 	_GeoData ("Geo Data", 2D) = "white" {}
+	_CustomScale( "Custom Scale", float) = 1.0
 }
 
 SubShader {
@@ -15,12 +16,15 @@ SubShader {
 			#pragma multi_compile_fwdadd_fullshadows
 
 			#include "Assets/cnlohr/Shaders/hashwithoutsine/hashwithoutsine.cginc"
+			#include "Packages/com.llealloo.audiolink/Runtime/Shaders/AudioLink.cginc"
 
 			#include "UnityCG.cginc"
 			#include "AutoLight.cginc"
 			#include "Lighting.cginc"
 			#include "UnityShadowLibrary.cginc"
 			#include "UnityPBSLighting.cginc"
+			
+			uniform float _CustomScale;
 			
 			struct appdata {
 				UNITY_VERTEX_INPUT_INSTANCE_ID
@@ -33,7 +37,7 @@ SubShader {
 			
 			struct g2f {
 				float4 vertex : SV_POSITION;
-				float2 tc : TEXCOORD0;
+				sample float2 tc : TEXCOORD0; // "this force multisampling" Thanks, Bgolus https://forum.unity.com/threads/questions-on-multi-sampling.1398895/ 
 				float4 color : COLOR;
 				float4 hitworld : HIT0;
 				UNITY_FOG_COORDS(1)
@@ -68,38 +72,65 @@ SubShader {
 				// from  https://github.com/antimatter15/splat/blob/main/main.js
 
 				rot = normalize( rot.xyzw );
-				
-#if 0
-				scale = exp(scale);
-				scale *= 2.5;
-				//scale *= opacity;
-				opacity = 1.0;
-				
-				scale = abs( scale );
-
-				float3 fvv;
-				if( abs( scale.x ) < abs( scale.y ) )
-				{
-					if( abs( scale.x ) < abs( scale.z ) )
-						fvv = float3( 0.0, h.x, h.y );
-					else
-						fvv = float3( h.x, h.y, 0.0 );
-				}
-				else
-				{
-					if( abs( scale.y ) < abs( scale.z ) )
-						fvv = float3( h.x, 0.0, h.y );
-					else
-						fvv = float3( h.x, h.y, 0.0 );
-				}
-#endif
-
 				float3 fvv = float3( h.x, h.y, 0.0 );
 
 				fvv *= scale;
 				float3 hprime = Rotate( fvv, rot );
 
 				return pos + hprime;
+			}
+
+
+			void mathQuatApply(out float4 qout, const float4 q1, const float4 q2)
+			{
+				// NOTE: Does not normalize - you will need to normalize eventually.
+				float tmpw, tmpx, tmpy;
+				tmpw    = (q1.x * q2.x) - (q1.y * q2.y) - (q1.z * q2.z) - (q1.w * q2.w);
+				tmpx    = (q1.x * q2.y) + (q1.y * q2.x) + (q1.z * q2.w) - (q1.w * q2.z);
+				tmpy    = (q1.x * q2.z) - (q1.y * q2.w) + (q1.z * q2.x) + (q1.w * q2.y);
+				qout.w = (q1.x * q2.w) + (q1.y * q2.z) - (q1.z * q2.y) + (q1.w * q2.x);
+				qout.z = tmpy;
+				qout.y = tmpx;
+				qout.x = tmpw;
+			}
+			
+			float dotfloat4(float4 a, float4 b)
+			{
+				return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+			}
+
+			float4 slerp(float4 v0, float4 v1, float t)
+			{
+				// Compute the cosine of the angle between the two vectors.
+				float dot = dotfloat4(v0, v1);
+
+				const float DOT_THRESHOLD = 0.9995;
+				if (abs(dot) > DOT_THRESHOLD)
+				{
+					// If the inputs are too close for comfort, linearly interpolate
+					// and normalize the result.
+					float4 result = v0 + t * (v1 - v0);
+					normalize(result);
+					return result;
+				}
+
+				// If the dot product is negative, the quaternions
+				// have opposite handed-ness and slerp won't take
+				// the shorter path. Fix by reversing one quaternion.
+				if (dot < 0.0f)
+				{
+					v1 = -v1;
+					dot = -dot;
+				}
+
+				clamp(dot, -1, 1); // Robustness: Stay within domain of acos()
+				float theta_0 = acos(dot); // theta_0 = angle between input vectors
+				float theta = theta_0 * t; // theta = angle between v0 and result 
+
+				float4 v2 = v1 - v0 * dot;
+				normalize(v2); // { v0, v2 } is now an orthonormal basis
+
+				return v0 * cos(theta) + v2 * sin(theta);
 			}
 
 			v2g VertexProgram ( appdata v, uint vid : SV_VertexID )
@@ -139,12 +170,42 @@ SubShader {
 				uint3 scaleraw = uint3( ( gpdata.y & 0xff0000 )>>16, (gpdata.y >> 24), (gpdata.z & 0xff) );
 				float3 scale = exp(( float3(scaleraw) - 0.5) / 32.0 - 7.0);
 				
+				
+				scale *= _CustomScale;
+				
+				
 				//Force overflow to fix signed issue.
 				int3 rotraw = int3( ( gpdata.z >> 8 ) & 0xff, (gpdata.z >> 16) & 0xff, gpdata.z >> 24 ) * 16777216;
 				float4 rot = float4( 0.0, rotraw / ( 127.0 * 16777216.0 ) );
 				rot.x = sqrt(1.0 - dot( rot.yzw, rot.yzw ));
 
 				float4 color = float4( uint3( ( gpdata.w >> 0) & 0xff, (gpdata.w >> 8) & 0xff, (gpdata.w >> 16) & 0xff ) / 255.0, 1.0 );
+
+				float ntime = AudioLinkDecodeDataAsSeconds(ALPASS_GENERALVU_INSTANCE_TIME);
+				if (AudioLinkGetVersionMajor() <= 0)
+					ntime = _Time.y;
+				float thisTime = glsl_mod( ntime + prim, 10000.0 );
+				float thisFall = 9900-thisTime;
+				thisFall *= 0.5;
+				thisFall = max( -thisFall, 0 );
+				vp.z -= thisFall;
+				
+				float4 nrot = normalize( chash41( prim ) );
+				rot = slerp( rot, nrot, thisFall );
+
+
+				float3 fnorm = float3( 0.0, 0.0, 1.0 );
+				float fn = csimplex3( vp*0.9+100.0 );
+				fnorm = Rotate( fnorm, rot );
+				// Random
+				//vp += AudioLinkLerpMultiline(ALPASS_DFT + float2(prim%128, 0)) * fnorm * 0.01;
+				
+				// Consistent
+				//vp += AudioLinkLerpMultiline(ALPASS_DFT + float2(fn*128*0.5, 0)) * fnorm * 0.02;
+				
+				vp += AudioLinkLerpMultiline(ALPASS_AUTOCORRELATOR + float2( glsl_mod(fn*128+ntime*8.0, 128.0), 0)).xxx * fnorm * 0.002;
+				
+				//vp += sin( _Time.y ) * fn;
 
 				if( color.a < 0.3 ) return;
 				if( color.r < 0.0 || color.g < 0.0 || color.b < 0.0 ) return;
@@ -188,17 +249,20 @@ SubShader {
 	Pass {
 		Tags {"LightMode" = "ShadowCaster"}
 		Cull Off
-		AlphaToMask On
+		//AlphaToMask On , out uint mask : SV_Coverage
 		CGPROGRAM
-		float4 frag(g2f i, out uint mask : SV_Coverage ) : SV_Target
+		float4 frag(g2f i ) : SV_Target
 		{
 			UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX( i );
-			float inten = 1.1 - length( i.tc.xy ) / 1.1;
+			float squircleness = 2.2;
+			float2 tc = abs( i.tc.xy );
+			float inten = 1.1 - ( pow( tc.x, squircleness ) + pow( tc.y, squircleness ) ) / 1.1;
 			inten *= i.color.a;
-			inten *= 3.0;
+			inten *= 1.7;
 			float fakeAlpha = saturate( inten*10.0 - 3.0 );// - chash13( float3( _Time.y, i.tc.xy ) * 100.0 );
-			mask = ( 1u << ((uint)(fakeAlpha*GetRenderTargetSampleCount() + 0.5)) ) - 1;
-			if( fakeAlpha > 0.5 ) mask = 0xffff; else mask = 0x0000;
+			clip( fakeAlpha - 0.5 );
+			//mask = ( 1u << ((uint)(fakeAlpha*GetRenderTargetSampleCount() + 0.5)) ) - 1;
+			//if( fakeAlpha > 0.5 ) mask = 0xffff; else mask = 0x0000;
 			return 1.0;
 		}
 		ENDCG
@@ -208,18 +272,18 @@ SubShader {
 	Pass { 
 		Tags { "RenderType"="Opaque" "LightMode"="ForwardBase" }
 		Cull Off
-		AlphaToMask On
 		CGPROGRAM
-		float4 frag(g2f i, out uint mask : SV_Coverage ) : SV_Target
+		float4 frag(g2f i ) : SV_Target
 		{
 
 			UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX( i );
-			float inten = 1.1 - length( i.tc.xy ) / 1.1;
+			float squircleness = 2.2;
+			float2 tc = abs( i.tc.xy );
+			float inten = 1.1 - ( pow( tc.x, squircleness ) + pow( tc.y, squircleness ) ) / 1.1;
 			inten *= i.color.a;
-			inten *= 3.0;
+			inten *= 1.7;
 			float fakeAlpha = saturate( inten*10.0 - 3.0 );// - chash13( float3( _Time.y, i.tc.xy ) * 100.0 );
-			mask = ( 1u << ((uint)(fakeAlpha*GetRenderTargetSampleCount() + 0.5)) ) - 1;
-			if( fakeAlpha > 0.5 ) mask = 0xffff; else mask = 0x0000;
+			clip( fakeAlpha - 0.5 );
 			
 			// TODO: Fix shadow.
 			
@@ -256,8 +320,6 @@ SubShader {
 			}
 			
 			float3 color = pow( i.color.rgb, 1.4 );
-			
-			//color = i.hitworld.rgb;
 			color *= ( attenuation * 0.8 + 0.2); 
 			return float4( color, 1.0 );
 		}
