@@ -47,11 +47,10 @@ struct splatOut_t
 	*/
 
 	int16_t x, y, z;
-	int8_t sx, sy;
+	int8_t sx, sy, sz;
 	int8_t rx, ry, rz; // rq is shadowed.
 	int8_t cr, cg, cb;
 	int8_t reserved0;
-	int8_t reserved1;
 } * splatsOut;
 
 typedef struct splatIn_t splatIn;
@@ -110,6 +109,19 @@ void mathVectorAdd( float * pOut, const float * offset, const float * p )
 	pOut[0] = p[0] + offset[0];
 	pOut[1] = p[1] + offset[1];
 	pOut[2] = p[2] + offset[2];
+}
+
+void mathQuatApply(float* qout, const float* q1, const float* q2)
+{
+    // NOTE: Does not normalize - you will need to normalize eventually.
+    float tmpw, tmpx, tmpy;
+    tmpw    = (q1[0] * q2[0]) - (q1[1] * q2[1]) - (q1[2] * q2[2]) - (q1[3] * q2[3]);
+    tmpx    = (q1[0] * q2[1]) + (q1[1] * q2[0]) + (q1[2] * q2[3]) - (q1[3] * q2[2]);
+    tmpy    = (q1[0] * q2[2]) - (q1[1] * q2[3]) + (q1[2] * q2[0]) + (q1[3] * q2[1]);
+    qout[3] = (q1[0] * q2[3]) + (q1[1] * q2[2]) - (q1[2] * q2[1]) + (q1[3] * q2[0]);
+    qout[2] = tmpy;
+    qout[1] = tmpx;
+    qout[0] = tmpw;
 }
 
 float absf( float f )
@@ -338,28 +350,40 @@ int main( int argc, char ** argv )
 		so->y = oy;
 		so->z = oz;
 
-		float scale2s[2] = { realscale[0], realscale[1] };
-		float quatReRotate[4] = { 1.0, 0.0, 0.0, 0.0 };
-		if( realscale[0] < realscale[1] )
+		float scale2s[3] = { realscale[0], realscale[1], realscale[2] };
+		
+		// Make sure Z is the smallest scale.
+		if( realscale[0] < realscale[2] )
 		{
-			if( realscale[0] < realscale[2] )
-			{
-				scale2s[0] = realscale[2];
-				// Re-rotate. Should have 0 in the first term.
-			}
-		}
-		else
-		{
-			if( realscale[1] < realscale[2] )
-			{
-				scale2s[1] = realscale[2];
-				// Rerotate - should have 0 in second term.
-			}
-			// Otherwise, no need to rerotate - we are rotating < x y 0 >
+			// around Y
+			float quatRotXZ[4] = {0.70710678, 0.0, 0.70710678, 0.0 };
+			mathRotateVectorByQuaternion( scale2s, quatRotXZ, scale2s );
+			mathQuatApply(realrot, realrot, quatRotXZ);
 		}
 
-		so->sx = log(scale2s[0])/log(2.71828) + 7.0 * 32.0 + 0.5;
-		so->sy = log(scale2s[1])/log(2.71828) + 7.0 * 32.0 + 0.5;
+		if( realscale[1] < realscale[2] )
+		{
+			// around X
+			float quatRotYZ[4] = {0.70710678, 0.70710678, 0.0, 0.0 };
+			mathRotateVectorByQuaternion( scale2s, quatRotYZ, scale2s );
+			mathQuatApply(realrot, realrot, quatRotYZ);
+		}
+		
+		if( realscale[0] < realscale[1] )
+		{
+			// around Z
+			float quatRotXY[4] = {0.70710678, 0.0, 0.0, 0.70710678 };
+			mathRotateVectorByQuaternion( scale2s, quatRotXY, scale2s );
+			mathQuatApply(realrot, realrot, quatRotXY);
+		}
+
+		scale2s[0] = absf( scale2s[0] );
+		scale2s[1] = absf( scale2s[1] );
+		scale2s[2] = absf( scale2s[2] );
+
+		so->sx = ( log(scale2s[0])/log(2.71828) + 7.0 ) * 32.0 + 0.5;
+		so->sy = ( log(scale2s[1])/log(2.71828) + 7.0 ) * 32.0 + 0.5;
+		so->sz = ( log(scale2s[2])/log(2.71828) + 7.0 ) * 32.0 + 0.5;
 		// Is this the right way??? XXX TODO CHECK ME.
 		so->rx = realrot[0] * 127 - 0.5;
 		so->ry = realrot[1] * 127 - 0.5;
@@ -400,14 +424,14 @@ int main( int argc, char ** argv )
 				bO[5] = so->z >> 8;
 				bO[6] = so->sx;
 				bO[7] = so->sy;
-				bO[8] = so->rx;
-				bO[9] = so->ry;
-				bO[10] = so->rz;
-				bO[11] = so->cr;
-				bO[12] = so->cg;
-				bO[13] = so->cb;
-				bO[14] = so->reserved0;
-				bO[15] = so->reserved1;
+				bO[8] = so->sz;
+				bO[9] = so->rx;
+				bO[10] = so->ry;
+				bO[11] = so->rz;
+				bO[12] = so->cr;
+				bO[13] = so->cg;
+				bO[14] = so->cb;
+				bO[15] = so->reserved0;
 			}
 			p++;
 		}
@@ -438,9 +462,9 @@ int main( int argc, char ** argv )
 		"  m_KeepVertices: 1\n"
 		"  m_KeepIndices: 1\n"
 		"  m_IndexFormat: 0\n"
-		"  m_IndexBuffer: ", splatsInCount, 1 );
+		"  m_IndexBuffer: ", splatOutCount, 1 );
 			// Repeat 0000 # of indices
-	for( v = 0; v < splatsInCount; v++ )
+	for( v = 0; v < splatOutCount; v++ )
 	{
 		fprintf( fFM, "0000" );
 	}

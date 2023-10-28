@@ -1,7 +1,7 @@
 ﻿
-Shader "SlapSplat/SlapSplat" {
+Shader "SlapSplat/SlapSplatTest" {
 Properties {
-	_GeoData ("Geo Data", 2D) = "white" {}
+	_GeoData ("Geo Data", 3D) = "white" {}
 }
 
 SubShader {
@@ -41,7 +41,7 @@ SubShader {
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 			
-			texture2D< float4 > _GeoData;
+			texture3D< float4 > _GeoData;
 			
 			float3 Rotate( float3 v, float4 rot )
 			{
@@ -75,7 +75,6 @@ SubShader {
 				float qLen = length( rot );
 				rot /= qLen;
 				
-#if 0
 				scale = exp(scale);
 				scale *= 2.5;
 				//scale *= opacity;
@@ -98,9 +97,33 @@ SubShader {
 					else
 						fvv = float3( h.x, h.y, 0.0 );
 				}
-#endif
+				
+				// XXX For youtube - show what happens when you compress scale to 8 bits.
+				if( frac( _Time.y ) > 0.5 )
+				{
+					// Position = 6 bytes
+					// Scale = 2 bytes
+					// Rotation = 3 bytes
+					// Color = 3 bytes
 
-				float3 fvv = float3( h.x, h.y, 0.0 );
+					// 2 bytes extra???
+
+					int3 ipos = round( pos * 1000.0 );
+					pos = ipos / 1000.0;
+
+					// from -7 to +1 are valid.
+					float3 logscale = log(scale)/log(2.71828);
+					int3 encodedscale = (logscale + 7.0) * 32.0 + 0.5;
+					encodedscale = min( encodedscale, 255 );
+					encodedscale = max( encodedscale, 0 );
+					scale = exp(encodedscale/32.0-7.0);
+
+					// Rotation = 3 bytes
+					int3 encodedRot = ((int3)round(rot.yzw * 127));
+					rot.yzw = (encodedRot)/127.0;
+					rot.x = sqrt(1 - dot( rot.yzw, rot.yzw ));
+					rot = normalize( rot );
+				}
 
 				fvv *= scale;
 				float3 hprime = Rotate( fvv, rot );
@@ -133,23 +156,15 @@ SubShader {
 				o[2].tc = float2( -1.0, 1.0 );
 				o[3].tc = float2( 1.0, 1.0 );
 
-				uint width = 1, height, levels;
-				_GeoData.GetDimensions( width, height );
-				uint2 coord = uint2( prim % width, prim / width );
+				uint width = 1, height, depth, levels;
+				_GeoData.GetDimensions( 0, width, height, depth, levels );
+				uint2 coord = uint2( prim % height, prim / height );
 
-				uint4 gpdata = asuint( _GeoData.Load( int3( coord, 0 ) ) );
-				float4 rot = float4( 1.0, 0.0, 0.0, 0.0 );
-				float4 color = float4( 1.0, 1.0, 1.0, 1.0 );
-
-				int3 gpv = int3( gpdata.x << 16, gpdata.x & 0xffff0000, gpdata.y << 16 ) >> 16;
-				float3 vp = float3( gpv / 1000.0 );
-
-				uint3 scaleraw = uint3( ( gpdata.y & 0xff00 )>>8, (gpdata.y & 0xff), (gpdata.z >> 24) );
-				float3 scale = exp(( float3(scaleraw) - 0.5) / 32.0 - 7.0);
-				
-				//		so->sx = log(scale2s[0])/log(2.71828) + 7.0 * 32.0 + 0.5;
-
-
+				float4 vp = _GeoData.Load( uint4( 0, coord, 0 ) );
+				float4 scale = _GeoData.Load( uint4( 1, coord, 0 ) );
+				float4 color = _GeoData.Load( uint4( 2, coord, 0 ) );
+				float4 rot = _GeoData.Load( uint4( 3, coord, 0 ) );
+				vp.xy = vp;
 
 				if( color.a < 0.3 ) return;
 				if( color.r < 0.0 || color.g < 0.0 || color.b < 0.0 ) return;
@@ -261,8 +276,6 @@ SubShader {
 			}
 			
 			float3 color = pow( i.color.rgb, 1.4 );
-			
-			color = ( asuint( _GeoData.Load( uint3( i.tc.xy*100.0, 0 ) ) ).xyz % 65536 ) / 65536.0;
 			//color = i.hitworld.rgb;
 			color *= ( attenuation * 0.8 + 0.2); 
 			return float4( color, 1.0 );

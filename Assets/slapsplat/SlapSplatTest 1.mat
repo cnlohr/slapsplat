@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SlapSplat
-  m_Shader: {fileID: 4800000, guid: 75ad30ac333841c488b1c5e310cd1e5e, type: 3}
+  m_Name: SlapSplatTest 1
+  m_Shader: {fileID: 4800000, guid: 60acea0f5892f724495bdf33acdc3eaa, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -40,7 +40,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _GeoData:
-        m_Texture: {fileID: 2800000, guid: 74907b0d64c2fd649bed2f51997e7611, type: 2}
+        m_Texture: {fileID: 11700000, guid: d71e98ef7e51a0c458fa173b143658ea, type: 2}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
