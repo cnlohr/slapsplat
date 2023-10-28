@@ -226,7 +226,7 @@ SubShader {
 
 			#ifdef _USEINPUTBASIS
 			float3 lightray = float3(0,0,-1);
-			float3 lightray_rot = vector_quat_rotate( lightray,_InputBasisQuaternion );
+			float3 lightray_rot = vector_quat_rotate( lightray,normalize(_InputBasisQuaternion) );
 			#else
 			float3 lightray = _WorldSpaceLightPos0.xyz;
 			float3 lightray_rot = lightray;
@@ -442,14 +442,14 @@ SubShader {
             half y = ray.y / SKY_GROUND_THRESHOLD;
 			float3 rray = ray;
 			#ifdef _USEINPUTBASIS
-				rray = vector_quat_unrotate(ray,_InputBasisQuaternion);
+				rray = vector_quat_unrotate(ray,normalize(_InputBasisQuaternion));
 			#endif
         #elif SKYBOX_SUNDISK == SKYBOX_SUNDISK_SIMPLE
             half3 ray = IN.rayDir.xyz;
             half y = ray.y / SKY_GROUND_THRESHOLD;
 			float3 rray = ray;
 			#ifdef _USEINPUTBASIS
-				rray = vector_quat_unrotate(ray,_InputBasisQuaternion);
+				rray = vector_quat_unrotate(ray,normalize(_InputBasisQuaternion));
 			#endif
         #else
             half y = IN.skyGroundFactor;
@@ -461,7 +461,7 @@ SubShader {
 
 			#ifdef _USEINPUTBASIS
 			float3 lightray = float3(0,0,1);
-			float3 lightray_rot = vector_quat_rotate( lightray,_InputBasisQuaternion );
+			float3 lightray_rot = vector_quat_rotate( lightray,normalize(_InputBasisQuaternion) );
 			#else
 			float3 lightray = _WorldSpaceLightPos0.xyz;
 			float3 lightray_rot = lightray;
@@ -491,7 +491,7 @@ SubShader {
 				{
 					float moonness = SunAttenuation;
 					float nightness = saturate( .1+lightray_rot.y ) * 3.;
-					col += max( StarCalc( rray, vector_quat_rotate( float3(0,0,-1),_InputBasisQuaternion ) )*nightness, moonness );
+					col += max( StarCalc( rray, vector_quat_rotate( float3(0,0,-1),normalize(_InputBasisQuaternion) ) )*nightness, moonness );
 				}
 				else
 				{

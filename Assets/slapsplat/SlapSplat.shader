@@ -26,6 +26,16 @@ SubShader {
 			
 			uniform float _CustomScale;
 			
+			#undef UNITY_VERTEX_INPUT_INSTANCE_ID
+			#undef UNITY_FOG_COORDS
+			#undef UNITY_VERTEX_OUTPUT_STEREO
+			#undef UNITY_SETUP_INSTANCE_ID
+
+			#define UNITY_VERTEX_INPUT_INSTANCE_ID
+			#define UNITY_FOG_COORDS( x )
+			#define UNITY_VERTEX_OUTPUT_STEREO
+			#define UNITY_SETUP_INSTANCE_ID
+
 			struct appdata {
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
@@ -40,6 +50,7 @@ SubShader {
 				sample float2 tc : TEXCOORD0; // "this force multisampling" Thanks, Bgolus https://forum.unity.com/threads/questions-on-multi-sampling.1398895/ 
 				float4 color : COLOR;
 				float4 hitworld : HIT0;
+				float3 emission : EMISSION;
 				UNITY_FOG_COORDS(1)
 				UNITY_VERTEX_OUTPUT_STEREO
 				UNITY_VERTEX_INPUT_INSTANCE_ID
@@ -210,6 +221,11 @@ SubShader {
 				if( color.a < 0.3 ) return;
 				if( color.r < 0.0 || color.g < 0.0 || color.b < 0.0 ) return;
 
+				// Compute emission
+				float bnw = ( color.r + color.g + color.b ) / 3.0;
+				float3 emission = 0.0;//saturate( ( length( saturate((color.rgb - bnw) * float3( 0.1, 0.1, 2.0 )) ) - .3 ) * 100.0 ) * color;
+				emission += color * 0.16;
+
 				o[0].hitworld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2( -1, -1 ), color.a ), 1.0 ) );
 				o[1].hitworld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2( -1,  1 ), color.a ), 1.0 ) );
 				o[2].hitworld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2(  1, -1 ), color.a ), 1.0 ) );
@@ -223,6 +239,11 @@ SubShader {
 				o[1].color = color;
 				o[2].color = color;
 				o[3].color = color;
+				
+				o[0].emission = emission;
+				o[1].emission = emission;
+				o[2].emission = emission;
+				o[3].emission = emission;
 				
 				UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(o[0]);
 				UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(o[1]);
@@ -309,6 +330,7 @@ SubShader {
 				UNITY_TRANSFER_SHADOW( so, 0. );
 				attenuation = min( attenuation, LIGHT_ATTENUATION( so ) );
 				so.pos = clipPos + float4( -1/_ScreenParams.x, 0.0, 0.0, 0.0 );
+				/*
 				UNITY_TRANSFER_SHADOW( so, 0. );
 				attenuation = min( attenuation, LIGHT_ATTENUATION( so ) );
 				so.pos = clipPos + float4( 0, 1/_ScreenParams.y, 0.0, 0.0 );
@@ -317,10 +339,11 @@ SubShader {
 				so.pos = clipPos + float4( 0, 1/_ScreenParams.y, 0.0, 0.0 );
 				UNITY_TRANSFER_SHADOW( so, 0. );
 				attenuation = min( attenuation, LIGHT_ATTENUATION( so ) );
+				*/
 			}
 			
 			float3 color = pow( i.color.rgb, 1.4 );
-			color *= ( attenuation * 0.8 + 0.2); 
+			color *= ( attenuation ) * _LightColor0 + i.emission.rgb; 
 			return float4( color, 1.0 );
 		}
 		ENDCG
