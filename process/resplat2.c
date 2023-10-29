@@ -136,6 +136,21 @@ float sqrtf( float f )
 	return sqrt( f );
 }
 
+typedef struct
+{
+	int index;
+	float sort;
+} splatorder;
+
+int comparSplatOrder(const void* p1, const void* p2)
+{
+	splatorder * a1 = (splatorder*)p1;
+	splatorder * a2 = (splatorder*)p2;
+	if( a1->sort < a2->sort ) return -1;
+	else if( a1->sort > a2->sort ) return 1;
+	else return 0;
+}
+
 int main( int argc, char ** argv )
 {
 	int i;
@@ -145,9 +160,9 @@ int main( int argc, char ** argv )
 	for( i = 0; i < sizeof( offsetList ) / sizeof( offsetList.pos[0] ); i++ )
 		offsetListAsInt[i] = -1;
 
-	if( argc != 5 )
+	if( argc != 6 )
 	{
-		fprintf( stderr, "Error: Usage: resplat [.ply file] [out, .ply file] [out, .asset image file] [out, .asset mesh file]\n" );
+		fprintf( stderr, "Error: Usage: resplat [.ply file] [out, .ply file] [out, .asset image file] [out, .asset mesh file] [out, .asset image cardinal sort file]\n" );
 		fprintf( stderr, "WARNING: PLY file output is currently broken.\n" );
 		return -5;
 	}
@@ -466,6 +481,7 @@ int main( int argc, char ** argv )
 			p++;
 		}
 		WriteUnityImageAsset( argv[3], pData, size, w, h, 1, UTE_RGBA_FLOAT );
+		free( pData );
 	}
 	
 	FILE * fFM = fopen( argv[4], "w" );
@@ -516,6 +532,50 @@ int main( int argc, char ** argv )
 		"  m_MeshOptimizationFlags: 1\n", 1 );
 	fclose( fFM );
 
+	
+	{
+		int w = 2048;
+		int h = (( splatOutCount + w - 1 ) / w) * 6;
+		int dir = 0;
+		splatorder * sortedSplats = malloc( sizeof( splatorder ) * splatOutCount );
+		uint32_t * pData = malloc( w * h * 4 );
+		for( dir = 0; dir < 6; dir++ )
+		{
+			int splatno = 0;
+
+			for( splatno = 0; splatno < splatOutCount; splatno++ )
+			{
+				splatOut * so = &splatsOut[splatno];
+				sortedSplats[splatno].index = splatno;
+				if( dir == 0 )
+					sortedSplats[splatno].sort = so->x;
+				else if( dir == 1 )
+					sortedSplats[splatno].sort = -so->x;
+				else if( dir == 2 )
+					sortedSplats[splatno].sort = so->y;
+				else if( dir == 3 )
+					sortedSplats[splatno].sort = -so->y;
+				else if( dir == 4 )
+					sortedSplats[splatno].sort = so->z;
+				else if( dir == 5 )
+					sortedSplats[splatno].sort = -so->z;
+			}
+
+			qsort (sortedSplats, splatOutCount, sizeof(splatorder), comparSplatOrder);
+  
+			splatno = 0;
+			int x, y;
+			for( y = 0; y < h/6; y++ )
+			for( x = 0; x < w; x++ )
+			{
+				if( splatno >= splatOutCount ) continue;
+				int order = sortedSplats[splatno++].index;
+				pData[x+y*w + (dir*(h/6)*w)] = order;
+			}			
+		}
+		WriteUnityImageAsset( argv[5], pData, w * h * 4, w, h, 1, UTE_R_FLOAT );
+		free( pData );
+	}
 
 	return 0;	
 }

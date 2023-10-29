@@ -136,7 +136,7 @@ SubShader {
 				UNITY_SETUP_INSTANCE_ID( v );
 				v2g t;
 				UNITY_INITIALIZE_OUTPUT(v2g, t);
-				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(v);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(t);
 				t.nv = vid;
 				return t;
 			}
@@ -239,7 +239,7 @@ SubShader {
 			inten *= 3.0;
 			float fakeAlpha = saturate( inten*10.0 - 3.0 );// - chash13( float3( _Time.y, i.tc.xy ) * 100.0 );
 			mask = ( 1u << ((uint)(fakeAlpha*GetRenderTargetSampleCount() + 0.5)) ) - 1;
-			if( fakeAlpha > 0.5 ) mask = 0xffff; else mask = 0x0000;
+			//if( fakeAlpha > 0.5 ) mask = 0xffff; else mask = 0x0000;
 			
 			// TODO: Fix shadow.
 			
