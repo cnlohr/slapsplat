@@ -1,7 +1,24 @@
 # vrcsplat
 
 ## Setup
+ * Requires AudioLink + Texel Video Player (from VCC)
+ * Requires TinyCC to build the .exe https://github.com/cnlohr/tinycc-win64-installer/releases/tag/v0_0.9.27
 
- * Requires AudioLink (from VCC)
- * Requires VideoTXL 2.2.1 - https://github.com/vrctxl/VideoTXL/releases/tag/2.2.1
+## To use
+ * open the `process` folder, then use command-line (cmd or powershell will both do)
+ * place .ply files you want to use in there.
+
+```
+Usage: resplat [.ply file] [out, .ply file] [out, .asset image file] [out, .asset mesh file] [out, .asset image cardinal sort file]
+WARNING: PLY file output is currently broken.
+```
+
+ * In Unity, use the SlapSplat shader on a new material.
+ * Put that material on an object.
+ * Use the Mesh .asset file as that object's mesh. NOTE: It is a point list (not even cloud) so you can't see it.
+ * Use the image .asset file on that material's image in.
+ * Use the cardinal sort file on the that material's cardinal sort.
  
+ BOOM It should appear.
+ 
+## 
