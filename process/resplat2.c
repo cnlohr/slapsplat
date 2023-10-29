@@ -28,29 +28,13 @@ struct splatIn_t
 
 struct splatOut_t
 {
-	/*
-		x = 16 bits
-		y = 16 bits
-		z = 16 bits
-		sx = 8 bits
-		sy = 8 bits
-
-		/// MASKED w = 8 bits ///
-		x = 8 bits
-		y = 8 bits
-		z = 8 bits
-		
-		r = 8 bits
-		g = 8 bits
-		b = 8 bits
-		/// MASKED a = 8 bits ///
-	*/
-
 	int16_t x, y, z;
-	int8_t sx, sy, sz;
+	uint8_t sx, sy, sz;
 	int8_t rx, ry, rz; // rq is shadowed.
-	int8_t cr, cg, cb;
+	uint8_t cr, cg, cb;
 	int8_t reserved0;
+	
+	int nOriginalID; // Not included in general payload to textures.
 } * splatsOut;
 
 typedef struct splatIn_t splatIn;
@@ -162,8 +146,7 @@ int main( int argc, char ** argv )
 
 	if( argc != 6 )
 	{
-		fprintf( stderr, "Error: Usage: resplat [.ply file] [out, .ply file] [out, .asset image file] [out, .asset mesh file] [out, .asset image cardinal sort file]\n" );
-		fprintf( stderr, "WARNING: PLY file output is currently broken.\n" );
+		fprintf( stderr, "Error: Usage: resplat [.ply file] [out, quaded .ply file] [out, .asset image file] [out, .asset mesh file] [out, .asset image cardinal sort file]\n" );
 		return -5;
 	}
 
@@ -432,7 +415,6 @@ int main( int argc, char ** argv )
 		so->rx = rrx;
 		so->ry = rry;
 		so->rz = rrz;
-		//printf( "%4d %4d %4d\n", rrx,rry, rrz );
 
 		int cr = si->color[0] * 255.0;		if( cr > 255 ) cr = 255;
 		int cg = si->color[1] * 255.0;		if( cg > 255 ) cg = 255;
@@ -440,6 +422,8 @@ int main( int argc, char ** argv )
 		so->cr = cr;
 		so->cg = cg;
 		so->cb = cb;
+		
+		so->nOriginalID = v;
 	}
 
 	printf( "Loaded %d splats\n", splatsInCount );
@@ -533,6 +517,8 @@ int main( int argc, char ** argv )
 	fclose( fFM );
 
 	
+	// Generate a cardinal sorting map.  The idea is we sort from each direction (left/right/up/down/forward/backwards) and
+	// then the geometry shader will figure out what the best one to use is.
 	{
 		int w = 2048;
 		int h = (( splatOutCount + w - 1 ) / w) * 6;
@@ -576,6 +562,93 @@ int main( int argc, char ** argv )
 		WriteUnityImageAsset( argv[5], pData, w * h * 4, w, h, 1, UTE_R_FLOAT );
 		free( pData );
 	}
+
+	fprintf( fOut, "ply\n" );
+	//fprintf( fOut, "format binary_little_endian 1.0\n" );
+	fprintf( fOut, "format ascii 1.0\n" );
+	fprintf( fOut, "element vertex %d\n", splatOutCount * 4 );
+	fprintf( fOut, "property float x\n" );
+	fprintf( fOut, "property float y\n" );
+	fprintf( fOut, "property float z\n" );
+	fprintf( fOut, "property float red\n" );
+	fprintf( fOut, "property float green\n" );
+	fprintf( fOut, "property float blue\n" );
+	fprintf( fOut, "property float alpha\n" );
+	fprintf( fOut, "property float s\n" );
+	fprintf( fOut, "property float t\n" );
+	fprintf( fOut, "property float u\n" );
+	fprintf( fOut, "element face %d\n", splatOutCount );
+	fprintf( fOut, "property list uint uint vertex_indices\n" );
+	fprintf( fOut, "end_header\n" );
+
+	for( v = 0; v < splatOutCount; v++ )
+	{
+		splatOut * so = &splatsOut[v];
+
+		float pos[3] = { 
+			so->x / 65535.0f * inversescale + centers[0],
+			so->y / 65535.0f * inversescale + centers[1],
+			so->z / 65535.0f * inversescale + centers[2] };
+		float scale[3] = {
+			exp(((so->sx - 0.5) / 32.0) - 7.0),
+			exp(((so->sy - 0.5) / 32.0) - 7.0),
+			exp(((so->sz - 0.5) / 32.0) - 7.0) };
+		float rot[4] = { 0, so->rx / 127.0, so->ry / 127.0, so->rz / 127.0 };  //XXX This looks wrong, shouldn't it contain 0.5?
+		float rsum = ( rot[1]*rot[1] + rot[2]*rot[2] + rot[3]*rot[3] );
+		if( rsum < 1.0 )
+			rot[0] = sqrtf( 1.0 - rsum );
+		float cr = so->cr / 255.0;
+		float cg = so->cg / 255.0;
+		float cb = so->cb / 255.0;
+
+		float v1[7] = { 1, 1, 0 };
+		float v2[7] = { -1, 1, 0 };
+		float v3[7] = { 1, -1, 0 };
+		float v4[7] = { -1, -1, 0 };
+		
+		int orig = so->nOriginalID;
+
+		//if( rsum > 1.0 )
+		//	printf( "%f %f %f  %f %f %f  %f %f %f %f / %f / %d %d %d\n", pos[0], pos[1], pos[2], scale[0], scale[1], scale[2], rot[0], rot[1], rot[2], rot[3], rsum, so->rx, so->ry, so->rz );
+		
+		mathVectorScale( v1, scale, v1 );
+		mathRotateVectorByQuaternion( v1, rot, v1 );
+		mathVectorAdd( v1, pos, v1 );
+		fprintf( fOut, "%f %f %f %f %f %f %f %f %f %d\n", v1[0], v1[1], v1[2], cr, cg, cb, 1.0, 1.0, 1.0, orig );
+		//fwrite( v1, sizeof( v1 ), 1, fOut );
+		//fprintf( fOut, "v %f %f %f %f %f %f\n", v1[0], v1[1], v1[2], si->color[0], si->color[1], si->color[2] );
+
+		mathVectorScale( v2, scale, v2 );
+		mathRotateVectorByQuaternion( v2, rot, v2 );
+		mathVectorAdd( v2, pos, v2 );
+		fprintf( fOut, "%f %f %f %f %f %f %f %f %f %d\n", v2[0], v2[1], v2[2], cr, cg, cb, 1.0, 0.0, 1.0, orig );
+		//fwrite( v2, sizeof( v2 ), 1, fOut );
+		//fprintf( fOut, "v %f %f %f %f %f %f\n", v2[0], v2[1], v2[2], si->color[0], si->color[1], si->color[2] );
+
+		mathVectorScale( v3, scale, v3 );
+		mathRotateVectorByQuaternion( v3, rot, v3 );
+		mathVectorAdd( v3, pos, v3 );
+		fprintf( fOut, "%f %f %f %f %f %f %f %f %f %d\n", v3[0], v3[1], v3[2], cr, cg, cb, 1.0, 1.0, 0.0, orig );
+		//fwrite( v3, sizeof( v3 ), 1, fOut );
+		//fprintf( fOut, "v %f %f %f %f %f %f\n", v3[0], v3[1], v3[2], si->color[0], si->color[1], si->color[2] );
+
+		mathVectorScale( v4, scale, v4 );
+		mathRotateVectorByQuaternion( v4, rot, v4 );
+		mathVectorAdd( v4, pos, v4 );
+		fprintf( fOut, "%f %f %f %f %f %f %f %f %f %d\n", v4[0], v4[1], v4[2], cr, cg, cb, 1.0, 0.0, 0.0, orig );
+		//fwrite( v4, sizeof( v4 ), 1, fOut );
+		//fprintf( fOut, "v %f %f %f %f %f %f\n", v4[0], v4[1], v4[2], si->color[0], si->color[1], si->color[2] );
+	}
+
+	for( v = 0; v < splatOutCount; v++ )
+	{
+		int vb = v*4;
+		//fprintf( fOut, "f %d %d %d\nf %d %d %d\n", vb+1, vb+2, vb+3, vb+4, vb+5, vb+6 );
+		uint32_t voo[5] = { 4, vb+0, vb+2, vb+3, vb+1 };
+		fprintf( fOut, "%d %d %d %d %d\n", voo[0], voo[1], voo[2], voo[3], voo[4] );
+	}
+	
+	fclose( fOut );
 
 	return 0;	
 }

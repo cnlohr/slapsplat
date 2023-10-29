@@ -1,5 +1,9 @@
 # vrcsplat
 
+Ever wonder what happens if you take the gaussian out of gaussian splats and render them in VRChat?  Well, wonder no more! This project takes gaussian splats and turns them into a bunch of paint swatches.
+
+![Cover Image](https://github.com/cnlohr/slapsplat/blob/master/Assets/slapsplat/coverimage.jpg?raw=true)
+
 ## Setup
  * Requires AudioLink + Texel Video Player (from VCC)
  * Requires TinyCC to build the .exe https://github.com/cnlohr/tinycc-win64-installer/releases/tag/v0_0.9.27
@@ -21,4 +25,3 @@ WARNING: PLY file output is currently broken.
  
  BOOM It should appear.
  
-## 

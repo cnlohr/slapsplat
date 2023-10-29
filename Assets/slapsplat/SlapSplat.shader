@@ -247,7 +247,9 @@ SubShader {
 				//Force overflow to fix signed issue.
 				int3 rotraw = int3( ( gpdata.z >> 8 ) & 0xff, (gpdata.z >> 16) & 0xff, gpdata.z >> 24 ) * 16777216;
 				float4 rot = float4( 0.0, rotraw / ( 127.0 * 16777216.0 ) );
-				rot.x = sqrt(1.0 - dot( rot.yzw, rot.yzw ));
+				float dotsq = dot( rot.yzw, rot.yzw );
+				if( dotsq < 1.0 )
+					rot.x = sqrt(1.0 - dotsq);
 				float4 color = float4( uint3( ( gpdata.w >> 0) & 0xff, (gpdata.w >> 8) & 0xff, (gpdata.w >> 16) & 0xff ) / 255.0, 1.0 );
 
 				// If falling, then rotate.
