@@ -240,7 +240,6 @@ int main( int argc, char ** argv )
 		si->color[2] = vs[0]->color[2];
 		si->opacity  = vs[0]->color[3];
 		
-		
 		if( si->pos[0] > maxs[0] ) maxs[0] = si->pos[0];
 		if( si->pos[1] > maxs[1] ) maxs[1] = si->pos[1];
 		if( si->pos[2] > maxs[2] ) maxs[2] = si->pos[2];
@@ -248,7 +247,6 @@ int main( int argc, char ** argv )
 		if( si->pos[1] < mins[1] ) mins[1] = si->pos[1];
 		if( si->pos[2] < mins[2] ) mins[2] = si->pos[2];
 
-		
 		// XXX TODO FIXME.
 		int axis1edge = 1;
 		int axis2edge = 2;
@@ -258,24 +256,30 @@ int main( int argc, char ** argv )
 		mathVectorSub( edge1, vs[0]->pos, vs[axis1edge]->pos );
 		mathVectorSub( edge2, vs[0]->pos, vs[axis2edge]->pos );
 		
-		si->scale[0] = mathLength( edge1 );
-		si->scale[1] = mathLength( edge2 );
+		si->scale[0] = mathLength( edge1 ) / 2.0;
+		si->scale[1] = mathLength( edge2 ) / 2.0;
 		si->scale[2] = 0;
 
 		// Generate Quaternion from each axis.
-		float up[3];
-		mathCrossProduct( up, edge1, edge2 );
-		mathVectorScalar( up, up, 1.0/mathLength( up ) );
+		float m33[9];
+		mathVectorNormalize( m33 + 0, edge1 );
+		mathVectorNormalize( m33 + 3, edge2 );
+		mathCrossProduct( m33 + 6, m33 + 0, m33 + 3 );
+		mathVectorScalar( m33 + 6, m33 + 6, 1.0/mathLength( m33 + 6 ) );
 
-		// What does it take to rotate 0,0,1 to this?  That's our first quaternion.
+/*		// What does it take to rotate 0,0,1 to this?  That's our first quaternion.
 		float fromup[3] = { 0, 0, 1 };
 		float qfirst[4];
 		mathCreateQuatFromTwoVectors( qfirst, fromup, up );
+*/
+		float qrot[4];
+		mathCreateQuatFromBasis( qrot, m33 );
 
-		si->rot[0] = qfirst[0];
-		si->rot[1] = qfirst[1];
-		si->rot[2] = qfirst[2];
-		si->rot[3] = qfirst[3];
+
+		si->rot[0] = qrot[0];
+		si->rot[1] = qrot[1];
+		si->rot[2] = qrot[2];
+		si->rot[3] = qrot[3];
 	}
 	
 	printf( "Got %d splats\n", splatsInCount );

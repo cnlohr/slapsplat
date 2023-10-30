@@ -92,8 +92,14 @@ float mathDotProduct( const float *f1, const float * f2 )
 	return f1[0] * f2[0] + f1[1] * f2[1] + f1[2] * f2[2];
 }
 
-// WARNING: Vectors MUST be normalized.
-void mathCreateQuatFromTwoVectors( float * q, const float * to, const float * from )
+void mathVectorNormalize( float * fout, const float * fin )
+{
+	float imag = fin[0] * fin[0] + fin[1] * fin[1] + fin[2] * fin[2];
+	mathVectorScalar( fout, fin, 1.0/sqrtf(imag) );
+}
+
+// WARNING: Vectors MUST be normalized.  XXX TODO: VALIDATE FROM/TO.
+void mathCreateQuatFromTwoVectors( float * q, const float * from, const float * to )
 {
 	// Make sure vectors aren't pointing opposite directions.
 	float dot = mathDotProduct( from, to );
@@ -105,10 +111,57 @@ void mathCreateQuatFromTwoVectors( float * q, const float * to, const float * fr
 		q[3] = 0;
 		return;
 	}
-	mathCrossProduct( q+1, from, to );
-	float rsum = ( q[1]*q[1] + q[2]*q[2] + q[3]*q[3] );
-	if( rsum < 1.0 )
-		q[0] = sqrtf( 1.0 - rsum );
+	
+	float half[3];
+	mathVectorAdd( half, from, to );
+	mathVectorNormalize( half, half );
+	q[0] = mathDotProduct( from, half );
+	mathCrossProduct( q+1, from, half );
+}
+
+void mathCreateQuatFromBasis( float * q, const float * m33 )
+{
+	#define m00 m33[0]
+	#define m01 m33[3]
+	#define m02 m33[6]
+	#define m10 m33[1]
+	#define m11 m33[4]
+	#define m12 m33[7]
+	#define m20 m33[2]
+	#define m21 m33[5]
+	#define m22 m33[8]
+	#define qw q[0]
+	#define qx q[1]
+	#define qy q[2]
+	#define qz q[3]
+
+	float tr = m00 + m11 + m22;
+	
+	if (tr > 0) { 
+		float S = sqrt(tr+1.0) * 2; // S=4*qw 
+		qw = 0.25 * S;
+		qx = (m21 - m12) / S;
+		qy = (m02 - m20) / S; 
+		qz = (m10 - m01) / S; 
+	} else if ((m00 > m11)&(m00 > m22)) { 
+		float S = sqrt(1.0 + m00 - m11 - m22) * 2; // S=4*qx 
+		qw = (m21 - m12) / S;
+		qx = 0.25 * S;
+		qy = (m01 + m10) / S; 
+		qz = (m02 + m20) / S; 
+	} else if (m11 > m22) { 
+		float S = sqrt(1.0 + m11 - m00 - m22) * 2; // S=4*qy
+		qw = (m02 - m20) / S;
+		qx = (m01 + m10) / S; 
+		qy = 0.25 * S;
+		qz = (m12 + m21) / S; 
+	} else { 
+		float S = sqrt(1.0 + m22 - m00 - m11) * 2; // S=4*qz
+		qw = (m10 - m01) / S;
+		qx = (m02 + m20) / S;
+		qy = (m12 + m21) / S;
+		qz = 0.25 * S;
+	}
 }
 
 float absf( float f )
