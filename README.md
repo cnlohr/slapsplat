@@ -10,18 +10,24 @@ Ever wonder what happens if you take the gaussian out of gaussian splats and ren
 
 ## To use
  * open the `process` folder, then use command-line (cmd or powershell will both do)
- * place .ply files you want to use in there.
+ * place .ply files from polycam, etc. you want to use in there.
 
 ```
-Usage: resplat [.ply file] [out, .ply file] [out, .asset image file] [out, .asset mesh file] [out, .asset image cardinal sort file]
-WARNING: PLY file output is currently broken.
+Usage: resplat2 [.ply file] [out, .ply file] [out, .asset image file] [out, .asset mesh file] [out, .asset image cardinal sort file]
 ```
+
+### Optionally edit your out ply file.
+
+The `out, .ply file` is a regular PLY mesh.  You can edit it freely in blender for instance and rexport then use `geotoasset.exe` to create the image, mesh and sort files for the rest of the pipeline.
+
+## Then, to use those 3 things...
 
  * In Unity, use the SlapSplat shader on a new material.
  * Put that material on an object.
  * Use the Mesh .asset file as that object's mesh. NOTE: It is a point list (not even cloud) so you can't see it.
  * Use the image .asset file on that material's image in.
  * Use the cardinal sort file on the that material's cardinal sort.
+ * Apply a brush pattern.
  
  BOOM It should appear.
  
