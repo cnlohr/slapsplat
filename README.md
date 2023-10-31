@@ -13,7 +13,7 @@ We create 3 textures to render from:
     2. Scale (3 bytes) is stored exponentially in `uint8_t`'s, as `exp( value / 32.0 - 7.0 )`
     3. Rotation (3 bytes) is stored as `int8_t` with x, y, z; q is synthesized.  As a quaternion.
     4. Color (4 bytes) is stored as `uint8_t`.
-    5. One spare byte.  In addition to the `z` component of scale and `a` component of color being unused.
+    5. The `z` component of scale and `a` component of color being unused.
  2. The Mesh .asset:  Only one vertex but as many indices as there are splats.  This is done to conserve download space.  It compresses extremely well.  Also by only having one vertex, there can be an unlimited number of points, that point at that vertex.  A geometry shader will convert these points to the proper splats at runtime.
  3. The cardinal sort .asset:  A 32-bit-per-pixel texture containing the order in which the splats should be rendered, from front to back for each of the 4 cardinal directions.  This optimizes the rendering to catch early z, which is crucial for performance because otherwise there would be far too much overdraw to be practical.
 
