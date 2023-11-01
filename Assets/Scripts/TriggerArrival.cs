@@ -15,8 +15,11 @@ public class TriggerArrival : UdonSharpBehaviour
     }
 	public override void OnPlayerTriggerEnter(VRCPlayerApi player)
 	{
-		ToggleOff0.SetActive(false);
-		ToggleOff1.SetActive(false);
-		ToggleOn0.SetActive(true);
+		if( player.isLocal )
+		{
+			ToggleOff0.SetActive(false);
+			ToggleOff1.SetActive(false);
+			ToggleOn0.SetActive(true);
+		}
 	}
 }

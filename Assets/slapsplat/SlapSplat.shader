@@ -265,7 +265,7 @@ SubShader {
 				// Consistent
 				//vp += AudioLinkLerpMultiline(ALPASS_DFT + float2(fn*128*0.5, 0)) * fnorm * 0.02;
 				
-				vp += AudioLinkData(ALPASS_AUTOCORRELATOR + int2( abs( 128 - glsl_mod(fn*128+ntime*8.0, 256.0) ), 0)).xxx * fnorm * 0.002;
+				vp += AudioLinkData(ALPASS_AUTOCORRELATOR + int2( abs( 128 - glsl_mod(fn*128+ntime*8.0, 256.0) ), 0)).xxx * fnorm * 0.004;
 				
 				
 				// Compute emission
