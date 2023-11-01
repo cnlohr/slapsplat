@@ -45,4 +45,10 @@ The `out, .ply file` is a regular PLY mesh.  You can edit it freely in blender f
  * Apply a brush pattern.
  
  BOOM It should appear.
+
+ ## Credits
+  * Imaya for the backyard
+  * Nono for the Michaels capture
+  * Ako for the Porsche
+  * Laura MB for the paint swatch
  
