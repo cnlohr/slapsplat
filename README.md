@@ -21,7 +21,7 @@ We create 3 textures to render from:
 
 ## Setup
  * Requires AudioLink + Texel Video Player (from VCC)
- * Requires TinyCC to build the .exe https://github.com/cnlohr/tinycc-win64-installer/releases/tag/v0_0.9.27
+ * Requires TinyCC to build the .exe (only a 4.7MB Download) https://github.com/cnlohr/tinycc-win64-installer/releases/tag/v0_0.9.27 (But also I checked in the EXEs anyway)
 
 ## To use
  * open the `process` folder, then use command-line (cmd or powershell will both do)
