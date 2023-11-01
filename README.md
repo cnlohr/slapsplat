@@ -4,6 +4,8 @@ Ever wonder what happens if you take the gaussian out of gaussian splats and ren
 
 ![Cover Image](https://github.com/cnlohr/slapsplat/blob/master/Assets/slapsplat/coverimage.jpg?raw=true)
 
+[VRC Link](https://vrchat.com/home/launch?worldId=wrld_0ced80f6-29f7-4310-be6a-342eaf80c2ca&instanceId=github~region(us))
+
 ## Approach
 
 We create 3 textures to render from:
