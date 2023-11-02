@@ -27,6 +27,7 @@ We create 3 textures to render from:
 
 ```
 Usage: resplat2 [.ply file] [out, .ply file] [out, .asset image file] [out, .asset mesh file] [out, .asset image cardinal sort file]
+The out assets are optional. But if one is specified all must be specified.  Otherwise it only takes in a polycam .ply, and outputs a .ply mesh with vertex colors.
 ```
 
 ### Optionally edit your out ply file.

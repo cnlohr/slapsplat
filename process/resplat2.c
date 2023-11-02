@@ -24,13 +24,13 @@ int main( int argc, char ** argv )
 	for( i = 0; i < sizeof( offsetList ) / sizeof( offsetList.pos[0] ); i++ )
 		offsetListAsInt[i] = -1;
 
-	if( argc != 6 )
+	if( argc != 6 && argc != 3 )
 	{
-		fprintf( stderr, "Error: Usage: resplat [.ply file] [out, quaded .ply file] [out, .asset image file] [out, .asset mesh file] [out, .asset image cardinal sort file]\n" );
+		fprintf( stderr, "Error: Usage: resplat2 [.ply file] [out, quaded .ply file] [ [out, .asset image file] [out, .asset mesh file] [out, .asset image cardinal sort file] ]\n" );
+		fprintf( stderr, "The out assets are optional. But if one is specified all must be specified.  Otherwise it only takes in a polycam .ply, and outputs a .ply mesh with vertex colors.\n" );
 		return -5;
 	}
 
-	FILE * fOut = fopen( argv[2], "w" );
 	FILE * f = fopen( argv[1], "rb" );
 	if( !f )
 	{
@@ -187,9 +187,11 @@ int main( int argc, char ** argv )
 		si->rot[3] = buffer[ offsetList.rot[3] ];
 	}
 	
-	CommonOutput( argv[3], argv[4], argv[5], mins, maxs );
+	if( argc >= 6 )
+		CommonOutput( argv[3], argv[4], argv[5], mins, maxs );
 
 	printf( "Outputting %s\n", argv[2] );
+	FILE * fOut = fopen( argv[2], "w" );
 	fprintf( fOut, "ply\n" );
 	//fprintf( fOut, "format binary_little_endian 1.0\n" );
 	fprintf( fOut, "format ascii 1.0\n" );
