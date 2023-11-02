@@ -364,6 +364,7 @@ void CommonOutput( const char * ImageAsset, const char * MeshAsset, const char *
 	printf( "Loaded %d splats\n", splatsInCount );
 	printf( "Culled to %d splats\n", splatOutCount );
 	
+	if( ImageAsset )
 	{
 		int w = 1024;
 		int h = ( splatOutCount + w - 1 ) / w;
@@ -403,57 +404,60 @@ void CommonOutput( const char * ImageAsset, const char * MeshAsset, const char *
 		free( pData );
 	}
 	
-	FILE * fFM = fopen( MeshAsset, "w" );
-	fprintf( fFM,
-		"%%YAML 1.1\n"
-		"%%TAG !u! tag:unity3d.com,2011:\n"
-		"--- !u!43 &4300000\n"
-		"Mesh:\n"
-		"  m_ObjectHideFlags: 0\n"
-		"  m_CorrespondingSourceObject: {fileID: 0}\n"
-		"  m_PrefabInstance: {fileID: 0}\n"
-		"  m_PrefabAsset: {fileID: 0}\n"
-		"  m_Name: SlapSplatMesh\n"
-		"  serializedVersion: 10\n"
-		"  m_SubMeshes:\n"
-		"  - serializedVersion: 2\n"
-		"    indexCount: %d\n"
-		"    topology: 5\n"
-		"    vertexCount: %d\n"
-		"    localAABB:\n"
-		"      m_Center: {x: 0, y: 0, z: 0}\n"
-		"      m_Extent: {x: 0, y: 0, z: 0}\n"
-		"  m_IsReadable: 1\n"
-		"  m_KeepVertices: 1\n"
-		"  m_KeepIndices: 1\n"
-		"  m_IndexFormat: 0\n"
-		"  m_IndexBuffer: ", splatOutCount, 1 );
-			// Repeat 0000 # of indices
-	for( v = 0; v < splatOutCount; v++ )
+	if( MeshAsset )
 	{
-		fprintf( fFM, "0000" );
+		FILE * fFM = fopen( MeshAsset, "w" );
+		fprintf( fFM,
+			"%%YAML 1.1\n"
+			"%%TAG !u! tag:unity3d.com,2011:\n"
+			"--- !u!43 &4300000\n"
+			"Mesh:\n"
+			"  m_ObjectHideFlags: 0\n"
+			"  m_CorrespondingSourceObject: {fileID: 0}\n"
+			"  m_PrefabInstance: {fileID: 0}\n"
+			"  m_PrefabAsset: {fileID: 0}\n"
+			"  m_Name: SlapSplatMesh\n"
+			"  serializedVersion: 10\n"
+			"  m_SubMeshes:\n"
+			"  - serializedVersion: 2\n"
+			"    indexCount: %d\n"
+			"    topology: 5\n"
+			"    vertexCount: %d\n"
+			"    localAABB:\n"
+			"      m_Center: {x: 0, y: 0, z: 0}\n"
+			"      m_Extent: {x: 0, y: 0, z: 0}\n"
+			"  m_IsReadable: 1\n"
+			"  m_KeepVertices: 1\n"
+			"  m_KeepIndices: 1\n"
+			"  m_IndexFormat: 0\n"
+			"  m_IndexBuffer: ", splatOutCount, 1 );
+				// Repeat 0000 # of indices
+		for( v = 0; v < splatOutCount; v++ )
+		{
+			fprintf( fFM, "0000" );
+		}
+		fprintf( fFM, "\n" );
+		fprintf( fFM,
+			"  m_VertexData:\n"
+			"    serializedVersion: 3\n"
+			"    m_VertexCount: %d\n"
+			"    m_Channels:\n"
+			"    - stream: 0\n"
+			"      offset: 0\n"
+			"      format: 0\n"
+			"      dimension: 3\n"
+			"    m_DataSize: 600\n"
+			"    _typelessdata: 000000000000000000000000\n"
+			"  m_LocalAABB:\n"
+			"    m_Center: {x: 0, y: 28, z: 15}\n"
+			"    m_Extent: {x: 40, y: 40, z: 60}\n"
+			"  m_MeshOptimizationFlags: 1\n", 1 );
+		fclose( fFM );
 	}
-	fprintf( fFM, "\n" );
-	fprintf( fFM,
-		"  m_VertexData:\n"
-		"    serializedVersion: 3\n"
-		"    m_VertexCount: %d\n"
-		"    m_Channels:\n"
-		"    - stream: 0\n"
-		"      offset: 0\n"
-		"      format: 0\n"
-		"      dimension: 3\n"
-		"    m_DataSize: 600\n"
-		"    _typelessdata: 000000000000000000000000\n"
-		"  m_LocalAABB:\n"
-		"    m_Center: {x: 0, y: 28, z: 15}\n"
-		"    m_Extent: {x: 40, y: 40, z: 60}\n"
-		"  m_MeshOptimizationFlags: 1\n", 1 );
-	fclose( fFM );
-
 	
 	// Generate a cardinal sorting map.  The idea is we sort from each direction (left/right/up/down/forward/backwards) and
 	// then the geometry shader will figure out what the best one to use is.
+	if( OrderAsset )
 	{
 		int w = 2048;
 		int h = (( splatOutCount + w - 1 ) / w) * 6;

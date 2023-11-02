@@ -189,8 +189,10 @@ int main( int argc, char ** argv )
 	
 	if( argc >= 6 )
 		CommonOutput( argv[3], argv[4], argv[5], mins, maxs );
+	else
+		CommonOutput( 0, 0, 0, mins, maxs );	
 
-	printf( "Outputting %s\n", argv[2] );
+	printf( "Outputting %s (%d)\n", argv[2], splatOutCount );
 	FILE * fOut = fopen( argv[2], "w" );
 	fprintf( fOut, "ply\n" );
 	//fprintf( fOut, "format binary_little_endian 1.0\n" );
