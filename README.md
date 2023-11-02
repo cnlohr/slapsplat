@@ -4,6 +4,8 @@ Ever wonder what happens if you take the gaussian out of gaussian splats and ren
 
 ![Cover Image](https://github.com/cnlohr/slapsplat/blob/master/Assets/slapsplat/coverimage.jpg?raw=true)
 
+[VRC Link](https://vrchat.com/home/launch?worldId=wrld_0ced80f6-29f7-4310-be6a-342eaf80c2ca&instanceId=github~region(us))
+
 ## Approach
 
 We create 3 textures to render from:
@@ -19,7 +21,7 @@ We create 3 textures to render from:
 
 ## Setup
  * Requires AudioLink + Texel Video Player (from VCC)
- * Requires TinyCC to build the .exe https://github.com/cnlohr/tinycc-win64-installer/releases/tag/v0_0.9.27
+ * Requires TinyCC to build the .exe (only a 4.7MB Download) https://github.com/cnlohr/tinycc-win64-installer/releases/tag/v0_0.9.27 (But also I checked in the EXEs anyway)
 
 ## To use
  * open the `process` folder, then use command-line (cmd or powershell will both do)
@@ -44,4 +46,10 @@ The `out, .ply file` is a regular PLY mesh.  You can edit it freely in blender f
  * Apply a brush pattern.
  
  BOOM It should appear.
+
+ ## Credits
+  * Imaya for the backyard
+  * Nono for the Michaels capture
+  * Ako for the Porsche
+  * Laura MB for the paint swatch
  
