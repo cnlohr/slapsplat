@@ -192,24 +192,26 @@ int main( int argc, char ** argv )
 	else
 		CommonOutput( 0, 0, 0, mins, maxs );	
 
+	const int binary = 1;
 	printf( "Outputting %s (%d)\n", argv[2], splatOutCount );
-	FILE * fOut = fopen( argv[2], "w" );
+	FILE * fOut = fopen( argv[2], "wb" ); // Blender prefers \n not \r\n
 	fprintf( fOut, "ply\n" );
-	//fprintf( fOut, "format binary_little_endian 1.0\n" );
-	fprintf( fOut, "format ascii 1.0\n" );
+	if( binary )
+		fprintf( fOut, "format binary_little_endian 1.0\n" );
+	else
+		fprintf( fOut, "format ascii 1.0\n" );
 	fprintf( fOut, "element vertex %d\n", splatOutCount * 4 );
 	fprintf( fOut, "property float x\n" );
 	fprintf( fOut, "property float y\n" );
 	fprintf( fOut, "property float z\n" );
-	fprintf( fOut, "property float red\n" );
-	fprintf( fOut, "property float green\n" );
-	fprintf( fOut, "property float blue\n" );
-	fprintf( fOut, "property float alpha\n" );
 	fprintf( fOut, "property float s\n" );
 	fprintf( fOut, "property float t\n" );
-	fprintf( fOut, "property float u\n" );
+	fprintf( fOut, "property uchar red\n" );
+	fprintf( fOut, "property uchar green\n" );
+	fprintf( fOut, "property uchar blue\n" );
+	fprintf( fOut, "property uchar alpha\n" );
 	fprintf( fOut, "element face %d\n", splatOutCount );
-	fprintf( fOut, "property list uint uint vertex_indices\n" );
+	fprintf( fOut, "property list uchar uint vertex_indices\n" );
 	fprintf( fOut, "end_header\n" );
 
 	for( v = 0; v < splatOutCount; v++ )
@@ -246,35 +248,76 @@ int main( int argc, char ** argv )
 		float v2[7] = { -1, 1, 0 };
 		float v3[7] = { 1, -1, 0 };
 		float v4[7] = { -1, -1, 0 };
+		
+		if( cr < 0.0 ) cr = 0.0; if( cr > 1.0 ) cr = 1.0;
+		if( cg < 0.0 ) cg = 0.0; if( cg > 1.0 ) cg = 1.0;
+		if( cb < 0.0 ) cb = 0.0; if( cb > 1.0 ) cb = 1.0;
 
 		//if( rsum > 1.0 )
 		//	printf( "%f %f %f  %f %f %f  %f %f %f %f / %f / %d %d %d\n", pos[0], pos[1], pos[2], scale[0], scale[1], scale[2], rot[0], rot[1], rot[2], rot[3], rsum, so->rx, so->ry, so->rz );
+		struct plyOutStruct
+		{
+			float x, y, z, s, t;
+			uint8_t r, g, b, a;
+		} __attribute__((packed));
 		
 		mathVectorScale( v1, scale, v1 );
 		mathRotateVectorByQuaternion( v1, rot, v1 );
 		mathVectorAdd( v1, pos, v1 );
-		fprintf( fOut, "%f %f %f %f %f %f %f %f %f %d\n", v1[0], v1[1], v1[2], cr, cg, cb, 1.0, 1.0, 1.0, orig );
-		//fwrite( v1, sizeof( v1 ), 1, fOut );
+		if( binary ) 
+		{
+			struct plyOutStruct po = { v1[0], v1[1], v1[2], 1.0, 1.0 , cr*255.5, cg*255.5, cb*255.5, 255 };
+			fwrite( &po, sizeof( po ), 1, fOut );
+		}
+		else
+		{
+			fprintf( fOut, "%f %f %f %f %f %d %d %d %d\n", v1[0], v1[1], v1[2], 1.0, 1.0, (int)(cr*255.5), (int)(cg*255.5), (int)(cb*255.5), 255 );
+		}
 		//fprintf( fOut, "v %f %f %f %f %f %f\n", v1[0], v1[1], v1[2], si->color[0], si->color[1], si->color[2] );
 
 		mathVectorScale( v2, scale, v2 );
 		mathRotateVectorByQuaternion( v2, rot, v2 );
 		mathVectorAdd( v2, pos, v2 );
-		fprintf( fOut, "%f %f %f %f %f %f %f %f %f %d\n", v2[0], v2[1], v2[2], cr, cg, cb, 1.0, 0.0, 1.0, orig );
+		if( binary ) 
+		{
+			struct plyOutStruct po = { v2[0], v2[1], v2[2], 0.0, 1.0, cr*255.5, cg*255.5, cb*255.5, 255 };
+			fwrite( &po, sizeof( po ), 1, fOut );
+		}
+		else
+		{
+			fprintf( fOut, "%f %f %f %f %f %d %d %d %d\n", v2[0], v2[1], v2[2], 0.0, 1.0, (int)(cr*255.5), (int)(cg*255.5), (int)(cb*255.5), 255 );
+		}
 		//fwrite( v2, sizeof( v2 ), 1, fOut );
 		//fprintf( fOut, "v %f %f %f %f %f %f\n", v2[0], v2[1], v2[2], si->color[0], si->color[1], si->color[2] );
 
 		mathVectorScale( v3, scale, v3 );
 		mathRotateVectorByQuaternion( v3, rot, v3 );
 		mathVectorAdd( v3, pos, v3 );
-		fprintf( fOut, "%f %f %f %f %f %f %f %f %f %d\n", v3[0], v3[1], v3[2], cr, cg, cb, 1.0, 1.0, 0.0, orig );
+		if( binary ) 
+		{
+			struct plyOutStruct po = { v3[0], v3[1], v3[2], 1.0, 0.0, cr*255.5, cg*255.5, cb*255.5, 255 };
+			fwrite( &po, sizeof( po ), 1, fOut );
+		}
+		else
+		{
+			fprintf( fOut, "%f %f %f %f %f %d %d %d %d\n", v3[0], v3[1], v3[2], 1.0, 0.0, (int)(cr*255.5), (int)(cg*255.5), (int)(cb*255.5), 255 );
+		}
 		//fwrite( v3, sizeof( v3 ), 1, fOut );
 		//fprintf( fOut, "v %f %f %f %f %f %f\n", v3[0], v3[1], v3[2], si->color[0], si->color[1], si->color[2] );
 
 		mathVectorScale( v4, scale, v4 );
 		mathRotateVectorByQuaternion( v4, rot, v4 );
 		mathVectorAdd( v4, pos, v4 );
-		fprintf( fOut, "%f %f %f %f %f %f %f %f %f %d\n", v4[0], v4[1], v4[2], cr, cg, cb, 1.0, 0.0, 0.0, orig );
+		
+		if( binary ) 
+		{
+			struct plyOutStruct po = { v4[0], v4[1], v4[2], 0.0, 0.0, cr*255.5, cg*255.5, cb*255.5, 255 };
+			fwrite( &po, sizeof( po ), 1, fOut );
+		}
+		else
+		{
+			fprintf( fOut, "%f %f %f %f %f %d %d %d %d\n", v4[0], v4[1], v4[2], 0.0, 0.0, (int)(cr*255.5), (int)(cg*255.5), (int)(cb*255.5), 255 );
+		}
 		//fwrite( v4, sizeof( v4 ), 1, fOut );
 		//fprintf( fOut, "v %f %f %f %f %f %f\n", v4[0], v4[1], v4[2], si->color[0], si->color[1], si->color[2] );
 	}
@@ -283,8 +326,22 @@ int main( int argc, char ** argv )
 	{
 		int vb = v*4;
 		//fprintf( fOut, "f %d %d %d\nf %d %d %d\n", vb+1, vb+2, vb+3, vb+4, vb+5, vb+6 );
-		uint32_t voo[5] = { 4, vb+0, vb+2, vb+3, vb+1 };
-		fprintf( fOut, "%d %d %d %d %d\n", voo[0], voo[1], voo[2], voo[3], voo[4] );
+		struct voquad
+		{
+			uint8_t nrp;
+			uint32_t vb0;
+			uint32_t vb1;
+			uint32_t vb2;
+			uint32_t vb3;
+		} __attribute__((packed)) voq = { 4, vb+0, vb+2, vb+3, vb+1 };
+		if( binary ) 
+		{
+			fwrite( &voq, sizeof( voq ), 1, fOut );
+		}
+		else
+		{
+			fprintf( fOut, "%d %d %d %d %d\n", voq.nrp, voq.vb0, voq.vb1, voq.vb2, voq.vb3 );
+		}
 	}
 	
 	fclose( fOut );
