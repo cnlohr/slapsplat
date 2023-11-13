@@ -6,11 +6,10 @@ using VRC.Udon;
 
 public class WarpTo : UdonSharpBehaviour
 {
-	public GameObject Destination;
-	
+	public GameObject Destination;	
 	public GameObject ToggleOff0;
 	public GameObject ToggleOff1;
-
+	public GameObject ToggleOff2;
 	public GameObject ToggleOn0;
 
     void Start()
@@ -21,6 +20,7 @@ public class WarpTo : UdonSharpBehaviour
 	{
 		ToggleOff0.SetActive(false);
 		ToggleOff1.SetActive(false);
+		ToggleOff2.SetActive(false);
 		ToggleOn0.SetActive(true);
 	
         Networking.LocalPlayer.TeleportTo(Destination.transform.position, 
