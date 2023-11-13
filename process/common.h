@@ -1,6 +1,8 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
+#include <math.h>
+
 void mathCrossProduct(float* p, const float* a, const float* b)
 {
     float tx = a[1] * b[2] - a[2] * b[1];
@@ -223,8 +225,6 @@ int comparSplatOrder(const void* p1, const void* p2)
 	else return 0;
 }
 
-
-
 void CommonOutput( const char * ImageAsset, const char * MeshAsset, const char * OrderAsset, float * mins, float * maxs )
 {
 	int v;
@@ -315,14 +315,24 @@ void CommonOutput( const char * ImageAsset, const char * MeshAsset, const char *
 			scale2s[2] = absf( scale2s[2] );
 		}
 
+		if( scale2s[0] < 0 ) scale2s[0] = -scale2s[0];
+		if( scale2s[1] < 0 ) scale2s[1] = -scale2s[1];
+		if( scale2s[2] < 0 ) scale2s[2] = -scale2s[2];
+		if( scale2s[0] < 0.000001 ) scale2s[0] = 0.000001;
+		if( scale2s[1] < 0.000001 ) scale2s[1] = 0.000001;
+		if( scale2s[2] < 0.000001 ) scale2s[2] = 0.000001;
+		
+//		if( scale2s[0] > 1 || scale2s[1] > 1 || scale2s[2] > 1 )
+//			printf( "%f %f %f -> %f\n", scale2s[0], scale2s[1], scale2s[2], ln2_simple( scale2s[2] ) );
 		int isx = ( log(scale2s[0])/log(2.71828) + 7.0 ) * 32.0 + 0.5;
 		int isy = ( log(scale2s[1])/log(2.71828) + 7.0 ) * 32.0 + 0.5;
 		int isz = ( log(scale2s[2])/log(2.71828) + 7.0 ) * 32.0 + 0.5;
+		//printf( "%3d %3d %3d << %f %f %f\n", isx, isy, isz, scale2s[0], scale2s[1], scale2s[2] );
 		if( isx > 255 ) isx = 255;
 		if( isy > 255 ) isy = 255;
 		if( isz > 255 ) isz = 255;
 		if( isx < 0 ) isx = 0;
-		if( isy < 0 ) isx = 0;
+		if( isy < 0 ) isy = 0;
 		if( isz < 0 ) isz = 0;
 		so->sx = isx;
 		so->sy = isy;

@@ -8,6 +8,9 @@ Properties {
 	_Swatch ("Swatch", 2D) = "white" {}
 	_CustomScale( "Custom Scale", float) = 1.0
 	[Toggle(_EnablePaintSwatch)] _EnablePaintSwatch ( "Enable Paint Swatch", int ) = 0
+	_Gamma ( "gamma", float ) = 1.0
+	_EmissionAmount( "emission amount", float ) = 0.16
+	_Brightness( "brightness", float ) = 1.0
 }
 
 SubShader {
@@ -55,6 +58,11 @@ SubShader {
 			
 			texture2D< float4 > _GeoData;
 			texture2D< float > _OrderData;
+			
+			float _Gamma;
+			float _EmissionAmount;
+			float _Brightness;
+
 			
 			float3 Rotate( float3 v, float4 rot )
 			{
@@ -147,7 +155,7 @@ SubShader {
 				UNITY_SETUP_INSTANCE_ID( v );
 				v2g t;
 				UNITY_INITIALIZE_OUTPUT(v2g, t);
-				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(t);
 				t.nv = vid;
 				return t;
 			}
@@ -268,10 +276,11 @@ SubShader {
 				vp += AudioLinkData(ALPASS_AUTOCORRELATOR + int2( abs( 128 - glsl_mod(fn*128+ntime*8.0, 256.0) ), 0)).xxx * fnorm * 0.004;
 				
 				
+				color = pow( color * _Brightness, _Gamma );
 				// Compute emission
 				float bnw = ( color.r + color.g + color.b ) / 3.0;
 				float3 emission = 0.0;//saturate( ( length( saturate((color.rgb - bnw) * float3( 0.1, 0.1, 2.0 )) ) - .3 ) * 100.0 ) * color;
-				emission += color * 0.16;
+				emission += color * _EmissionAmount;
 
 				o[0].hitworld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2( -1, -1 ), color.a ), 1.0 ) );
 				o[1].hitworld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2( -1,  1 ), color.a ), 1.0 ) );
