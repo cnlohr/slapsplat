@@ -380,7 +380,7 @@ SubShader {
 
 				shdata[0] = color; // Use base color.
 
-				float3 view = PlayerCenterCamera - centerWorld.xyz;
+				float3 view = centerWorld.xyz - PlayerCenterCamera;
 				view = normalize( view );
 				
 				view = mul( unity_WorldToObject, view );
