@@ -109,6 +109,7 @@ SubShader {
 				int i = 0;
 				res = 0.0;
 
+
 				#if (myL >= 1)
 					res += myT(-sqrt(3.0f/(4.0f*PI))*y ) * shvals[1];
 					res += myT( sqrt(3.0f/(4.0f*PI))*z ) * shvals[2];
@@ -392,11 +393,51 @@ SubShader {
 				ddir = mul( unity_WorldToObject, ddir );
 				ddir = normalize( ddir );
 
-				//XXX TODO: Switch to shEvaluate-but, the definitions are slightly different
-
 				float3 shalt = shEvaluate( ddir, shdata );
-
 				color.rgb = shalt;
+/*
+				// The original code:
+				#define readSH( x, y ) shdata[y+1]
+				
+				//ivec2 shIndex = ivec2((index << 4u) & INDEX_MASK, index >> (INDEX_SHIFT - 4u));
+				float3 sh10 = readSH(shIndex, 0);
+				float3 sh11 = readSH(shIndex, 1);
+				float3 sh12 = readSH(shIndex, 2);
+				float3 sh20 = readSH(shIndex, 3);
+				float3 sh21 = readSH(shIndex, 4);
+				float3 sh22 = readSH(shIndex, 5);
+				float3 sh23 = readSH(shIndex, 6);
+				float3 sh24 = readSH(shIndex, 7);
+				float3 sh30 = readSH(shIndex, 8);
+				float3 sh31 = readSH(shIndex, 9);
+				float3 sh32 = readSH(shIndex, 10);
+				float3 sh33 = readSH(shIndex, 11);
+				float3 sh34 = readSH(shIndex, 12);
+				float3 sh35 = readSH(shIndex, 13);
+				float3 sh36 = readSH(shIndex, 14);
+				// Formula and constants from
+				// https://github.com/graphdeco-inria/diff-gaussian-rasterization/blob/59f5f77e3ddbac3ed9db93ec2cfe99ed6c5d121d/cuda_rasterizer/forward.cu and
+				// https://github.com/graphdeco-inria/diff-gaussian-rasterization/blob/59f5f77e3ddbac3ed9db93ec2cfe99ed6c5d121d/cuda_rasterizer/auxiliary.h
+				// See also https://en.wikipedia.org/wiki/Table_of_spherical_harmonics
+				float3 shcontrib = -0.4886025119029199f * ddir.y * sh10                                                                       //
+						   + 0.4886025119029199f * ddir.z * sh11                                                                      //
+						   + -0.4886025119029199f * ddir.x * sh12                                                                     //
+						   + 1.0925484305920792f * ddir.x * ddir.y * sh20                                                              //
+						   + -1.0925484305920792f * ddir.y * ddir.z * sh21                                                             //
+						   + 0.31539156525252005f * (2.0 * ddir.z * ddir.z - ddir.x * ddir.x - ddir.y * ddir.y) * sh22                     //
+						   + -1.0925484305920792f * ddir.x * ddir.z * sh23                                                             //
+						   + 0.5462742152960396f * (ddir.x * ddir.x - ddir.y * ddir.y) * sh24                                            //
+						   + -0.5900435899266435f * ddir.y * (3.0 * ddir.x * ddir.x - ddir.y * ddir.y) * sh30                             //
+						   + 2.890611442640554f * ddir.x * ddir.y * ddir.z * sh31                                                       //
+						   + -0.4570457994644658f * ddir.y * (4.0 * ddir.z * ddir.z - ddir.x * ddir.x - ddir.y * ddir.y) * sh32             //
+						   + 0.3731763325901154f * ddir.z * (2.0 * ddir.z * ddir.z - 3.0 * ddir.x * ddir.x - 3.0 * ddir.y * ddir.y) * sh33  //
+						   + -0.4570457994644658f * ddir.x * (4.0 * ddir.z * ddir.z - ddir.x * ddir.x - ddir.y * ddir.y) * sh34             //
+						   + 1.445305721320277f * ddir.z * (ddir.x * ddir.x - ddir.y * ddir.y) * sh35                                     //
+						   + -0.5900435899266435f * ddir.x * (ddir.x * ddir.x - 3.0 * ddir.y * ddir.y) * sh36                             //
+				  ;
+				color.rgb += shcontrib.rgb;
+				color.rgb = -(color.rgb - shalt);
+				*/
 
 #endif	
 
