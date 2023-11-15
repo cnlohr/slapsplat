@@ -533,6 +533,9 @@ void CommonOutput( const char * ImageAsset, const char * MeshAsset, const char *
 		printf( "Output SH dimensions: %d x %d x UTE_RGB24\n", w, h );
 		float minsh = 1e20;
 		float maxsh = -1e20;
+
+		FILE * fDebug = fopen( "C:\\temp\\debug.txt", "w" );
+
 		for( y = 0; y < h; y+=4 )
 		{
 			for( x = 0; x < w; x+=4 )
@@ -554,16 +557,20 @@ void CommonOutput( const char * ImageAsset, const char * MeshAsset, const char *
 						for( x = 0; x < 3; x++ )
 						{
 							float s = so->colAndSH[j*3+x];
-							if( s > maxsh ) maxsh = s;
-							if( s < minsh ) minsh = s;
-							int v = (s + 2) * 64;
+							if( j != 0 )
+							{
+								if( s > maxsh ) maxsh = s;
+								if( s < minsh ) minsh = s;
+							}
+							int v = (j == 0) ? ( (s - 2.0) * 64) : ( (s + .5) * 256);
 							if( v < 0 ) v = 0;
 							if( v > 255 ) v = 255;
 							bO[j/4][(j%4)*3+x] = v;
+							fprintf( fDebug, "%f,", s );
 						}
-						
 					}
 				}
+				fprintf( fDebug, "\n" );
 				p++;
 			}
 			//printf( "%d\n", y );

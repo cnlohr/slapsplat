@@ -13,6 +13,7 @@ Properties {
 	_Brightness( "brightness", float ) = 1.0
 	[Toggle(_UseSH)] _UseSH( "Use SH", int ) = 0
 	_SHData ("SH Data", 2D) = "white" {}
+	_SHImpact ("SH Impact", float ) = 0.125
 }
 
 SubShader {
@@ -66,11 +67,11 @@ SubShader {
 			float _Gamma;
 			float _EmissionAmount;
 			float _Brightness;
-			
+			float _SHImpact;
 			
 			// Only compute 3 levels of SH.
 			#define myL 3
-			#define myT 
+			#define myT
 
 			// https://github.com/kayru/Probulator (Copyright (c) 2015 Yuriy O'Donnell, MIT)
 			float3 shEvaluate(const float3 p, const float3 shvals[16] )
@@ -103,10 +104,7 @@ SubShader {
 				float z4 = z2*z2;
 
 				int i = 0;
-
-				//XXX NOTE: The proper way is to use this conversion, but we already have a better base color parameter.
-				//res =  myT( 1.0f/(2.0f*sqrtPI) ) * shvals[0];
-				res = shvals[0];
+				res = 0.0;
 
 				#if (myL >= 1)
 					res += myT(-sqrt(3.0f/(4.0f*PI))*y ) * shvals[1];
@@ -143,6 +141,13 @@ SubShader {
 					res += myT(-3.0f*sqrt(70.0f/(64.0f*PI))*x*z*(x2-3.0f*y2) ) * shvals[23];
 					res += myT( 3.0f*sqrt(35.0f/(4.0f*(64.0f*PI)))*(x4-6.0f*y2*x2+y4) ) * shvals[24];
 				#endif
+				
+				
+				res *= _SHImpact;
+				//XXX NOTE: The proper way is to use this conversion, but we already have a better base color parameter.
+				//res =  myT( 1.0f/(2.0f*sqrtPI) ) * shvals[0];
+				res += shvals[0];
+
 
 				return res;
 			}
@@ -370,15 +375,17 @@ SubShader {
 				float3 shdata[16];
 				float3 centerWorld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2( 0, 0 ), color.a ), 1.0 ) );
 
-				for( j = 0; j < 16; j++ )
-					shdata[j] = _SHData.Load( int3( coord*4+int2(j%4, j/4), 0 ) ) * 4.0 - 2;
+				for( j = 1; j < 16; j++ )
+					shdata[j] = _SHData.Load( int3( coord*4+int2(j%4, j/4), 0 ) ) - 0.5;
 
 				shdata[0] = color; // Use base color.
+
 				float3 view = PlayerCenterCamera - centerWorld.xyz;
 				view = normalize( view );
 				
 				view = mul( unity_WorldToObject, view );
 				color.rgb = shEvaluate( view, shdata );
+				//color.rgb = (abs( shdata[7] ) );
 #endif	
 
 				color = pow( color * _Brightness, _Gamma );
