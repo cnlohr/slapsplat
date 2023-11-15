@@ -13,6 +13,7 @@ struct
 	int color[3];
 	int opacity;
 	int rot[4];
+	int rests[45];
 } offsetList;
 
 int main( int argc, char ** argv )
@@ -24,9 +25,9 @@ int main( int argc, char ** argv )
 	for( i = 0; i < sizeof( offsetList ) / sizeof( offsetList.pos[0] ); i++ )
 		offsetListAsInt[i] = -1;
 
-	if( argc != 6 && argc != 3 )
+	if( argc != 6 && argc != 3 && argc != 7 )
 	{
-		fprintf( stderr, "Error: Usage: resplat2 [.ply file] [out, quaded .ply file] [ [out, .asset image file] [out, .asset mesh file] [out, .asset image cardinal sort file] ]\n" );
+		fprintf( stderr, "Error: Usage: resplat2 [.ply file] [out, quaded .ply file] [ [out, .asset image file] [out, .asset mesh file] [out, .asset image cardinal sort file] [out, optional, .asset for SH data] ]\n" );
 		fprintf( stderr, "The out assets are optional. But if one is specified all must be specified.  Otherwise it only takes in a polycam .ply, and outputs a .ply mesh with vertex colors.\n" );
 		return -5;
 	}
@@ -92,6 +93,12 @@ int main( int argc, char ** argv )
 					else if( strcmp( param3, "rot_1" ) == 0 ) offsetList.rot[1] = parameterNumber;
 					else if( strcmp( param3, "rot_2" ) == 0 ) offsetList.rot[2] = parameterNumber;
 					else if( strcmp( param3, "rot_3" ) == 0 ) offsetList.rot[3] = parameterNumber;
+					else if( strncmp( param3, "f_rest_", 7 ) == 0 )
+					{
+						int rno = atoi( param3 + 7 );
+						if( rno < sizeof(offsetList.rests) / sizeof(offsetList.rests[0]) )
+							offsetList.rests[rno] = parameterNumber;
+					}
 					parameterNumber++;
 				}
 				else
@@ -149,6 +156,8 @@ int main( int argc, char ** argv )
 	float mins[3] = { 1e20, 1e20, 1e20 };
 	float maxs[3] = {-1e20,-1e20,-1e20 };
 
+	float minsh = 1e20;
+	float maxsh =-1e20;
 	for( v = 0; v < splatsInCount; v++ )
 	{
 		float buffer[parameterNumber];
@@ -185,12 +194,24 @@ int main( int argc, char ** argv )
 		si->rot[1] = buffer[ offsetList.rot[1] ];
 		si->rot[2] = buffer[ offsetList.rot[2] ];
 		si->rot[3] = buffer[ offsetList.rot[3] ];
+		
+		int i;
+		for( i = 0; i < 45; i++ )
+		{
+			if( offsetList.rests[i] >= 0 )
+				si->colAndSH[i+3] = buffer[ offsetList.rests[i] ];
+		}
+		si->colAndSH[0] = buffer[ offsetList.color[0] ];
+		si->colAndSH[1] = buffer[ offsetList.color[1] ];
+		si->colAndSH[2] = buffer[ offsetList.color[2] ];
+		
+		// SHs are generally in the range of 0..2.
 	}
-	
+		
 	if( argc >= 6 )
-		CommonOutput( argv[3], argv[4], argv[5], mins, maxs );
+		CommonOutput( argv[3], argv[4], argv[5], (argc == 7)?argv[6]:0, mins, maxs );
 	else
-		CommonOutput( 0, 0, 0, mins, maxs );	
+		CommonOutput( 0, 0, 0, 0, mins, maxs );	
 
 	const int binary = 1;
 	printf( "Outputting %s (%d)\n", argv[2], splatOutCount );

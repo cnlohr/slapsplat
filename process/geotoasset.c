@@ -284,7 +284,7 @@ int main( int argc, char ** argv )
 	
 	printf( "Got %d splats\n", splatsInCount );
 	
-	CommonOutput( argv[2], argv[3], argv[4], mins, maxs );
+	CommonOutput( argv[2], argv[3], argv[4], 0, mins, maxs );
 
 	
 	return 0;

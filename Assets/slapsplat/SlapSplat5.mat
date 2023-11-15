@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: SlapSplat5
   m_Shader: {fileID: 4800000, guid: 75ad30ac333841c488b1c5e310cd1e5e, type: 3}
-  m_ShaderKeywords: _EnablePaintSwatch
+  m_ShaderKeywords: _EnablePaintSwatch _UseSH
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -63,6 +63,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _SHData:
+        m_Texture: {fileID: 2800000, guid: f24847516437d73459f0ecbd8b79a971, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _Swatch:
         m_Texture: {fileID: 2800000, guid: 2fc5e2cff49e3f6429230eedbbc4eacb, type: 3}
         m_Scale: {x: 1, y: 1}
@@ -88,6 +92,7 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
+    - _UseSH: 1
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}

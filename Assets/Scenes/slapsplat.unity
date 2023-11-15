@@ -353,7 +353,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!64 &255680766
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -561,12 +561,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a22593cfd3956a4086933839ce8d4c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!4 &264791596 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 8317873238966784463, guid: 4a62e1f5f543492448841b96b02c46eb,
-    type: 3}
-  m_PrefabInstance: {fileID: 6771815598898871314}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &264791602 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1979442194990788770, guid: 32159718b1496dc43bf894762898ebb1,
@@ -803,13 +797,16 @@ MonoBehaviour:
   DynamicPrefabs: []
   DynamicMaterials:
   - {fileID: 2100000, guid: 5570f7f2985b0654f8c2ef3ad31eb1cb, type: 2}
-  - {fileID: 2100000, guid: 8429b93c9834c424ba855fb4288c90aa, type: 2}
+  - {fileID: 2100000, guid: d1987a5a15be4ac4f861bbbfad84d97e, type: 2}
   - {fileID: 2100000, guid: 8daeef7906b79b84596db75fe1d0896d, type: 2}
   - {fileID: 2100000, guid: 9afc4b106e391b84e881d5363ac12413, type: 2}
   - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
   - {fileID: 2100000, guid: e1a6e59d5b7a5f041acf4da9a46e2577, type: 2}
+  - {fileID: 2100000, guid: 8429b93c9834c424ba855fb4288c90aa, type: 2}
   - {fileID: 2100000, guid: 0f19dab2300578b4d87b7662da0e74a4, type: 2}
+  - {fileID: 2100000, guid: 6c90e9fe11ce9ba498d73975bd4b8e31, type: 2}
   - {fileID: 2100000, guid: 3519ad594d2567740b7ddbceec48d06a, type: 2}
+  - {fileID: 2100000, guid: e15ad49fc829ddf4aad897209e5a4550, type: 2}
   LightMapsNear: []
   LightMapsFar: []
   LightMode: 0
@@ -1105,10 +1102,12 @@ MonoBehaviour:
     SerializationNodes: []
   _udonSharpBackingUdonBehaviour: {fileID: 362281529}
   Destination: {fileID: 144435898}
-  ToggleOff0: {fileID: 1824846878}
-  ToggleOff1: {fileID: 255680765}
-  ToggleOff2: {fileID: 634742429}
-  ToggleOn0: {fileID: 1937913900}
+  ToggleOff:
+  - {fileID: 954235832}
+  - {fileID: 587618263}
+  - {fileID: 1575310135}
+  ToggleOn:
+  - {fileID: 1606362576}
 --- !u!65 &362281531
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1253,10 +1252,12 @@ MonoBehaviour:
     SerializationNodes: []
   _udonSharpBackingUdonBehaviour: {fileID: 369265604}
   Destination: {fileID: 820224596}
-  ToggleOff0: {fileID: 1937913900}
-  ToggleOff1: {fileID: 255680765}
-  ToggleOff2: {fileID: 0}
-  ToggleOn0: {fileID: 1824846878}
+  ToggleOff:
+  - {fileID: 1606362576}
+  - {fileID: 1575310135}
+  - {fileID: 587618263}
+  ToggleOn:
+  - {fileID: 954235832}
 --- !u!65 &369265606
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1455,7 +1456,7 @@ RectTransform:
   m_Children:
   - {fileID: 1931432153}
   m_Father: {fileID: 954235833}
-  m_RootOrder: 11
+  m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 270, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -1606,10 +1607,12 @@ MonoBehaviour:
     SerializationNodes: []
   _udonSharpBackingUdonBehaviour: {fileID: 453278022}
   Destination: {fileID: 820224596}
-  ToggleOff0: {fileID: 1937913900}
-  ToggleOff1: {fileID: 255680765}
-  ToggleOff2: {fileID: 0}
-  ToggleOn0: {fileID: 1824846878}
+  ToggleOff:
+  - {fileID: 1606362576}
+  - {fileID: 1575310135}
+  - {fileID: 587618263}
+  ToggleOn:
+  - {fileID: 954235832}
 --- !u!65 &453278024
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2349,7 +2352,7 @@ Transform:
   - {fileID: 51138601}
   - {fileID: 1015615927}
   m_Father: {fileID: 0}
-  m_RootOrder: 9
+  m_RootOrder: 12
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &599922266
 GameObject:
@@ -2467,7 +2470,7 @@ Transform:
   m_LocalScale: {x: 10, y: 6, z: 2}
   m_Children: []
   m_Father: {fileID: 954235833}
-  m_RootOrder: 9
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: -134.68501, z: 0}
 --- !u!1 &634742429
 GameObject:
@@ -2487,7 +2490,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!64 &634742430
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -2683,7 +2686,7 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
-    m_TransformParent: {fileID: 954235833}
+    m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 1406644838467969596, guid: 01cb54cd8aedeca49aa9544140cd8ecf,
         type: 3}
@@ -2891,12 +2894,6 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 867218619}
   m_PrefabAsset: {fileID: 0}
---- !u!4 &867218627 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 1406644838467969596, guid: 01cb54cd8aedeca49aa9544140cd8ecf,
-    type: 3}
-  m_PrefabInstance: {fileID: 867218619}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &947938619
 GameObject:
   m_ObjectHideFlags: 0
@@ -2981,10 +2978,12 @@ MonoBehaviour:
     SerializationNodes: []
   _udonSharpBackingUdonBehaviour: {fileID: 947938621}
   Destination: {fileID: 1492322116}
-  ToggleOff0: {fileID: 1824846878}
-  ToggleOff1: {fileID: 1937913900}
-  ToggleOff2: {fileID: 255680765}
-  ToggleOn0: {fileID: 634742429}
+  ToggleOff:
+  - {fileID: 954235832}
+  - {fileID: 1606362576}
+  - {fileID: 1575310135}
+  ToggleOn:
+  - {fileID: 587618263}
 --- !u!65 &947938623
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3078,14 +3077,11 @@ Transform:
   - {fileID: 362281534}
   - {fileID: 1623454744}
   - {fileID: 947938620}
-  - {fileID: 1458521883}
-  - {fileID: 264791596}
-  - {fileID: 867218627}
   - {fileID: 599922271}
   - {fileID: 1818393784}
   - {fileID: 443820991}
   m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_RootOrder: 9
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1015615926
 GameObject:
@@ -3171,10 +3167,12 @@ MonoBehaviour:
     SerializationNodes: []
   _udonSharpBackingUdonBehaviour: {fileID: 1015615928}
   Destination: {fileID: 820224596}
-  ToggleOff0: {fileID: 1937913900}
-  ToggleOff1: {fileID: 634742429}
-  ToggleOff2: {fileID: 255680765}
-  ToggleOn0: {fileID: 1824846878}
+  ToggleOff:
+  - {fileID: 1606362576}
+  - {fileID: 1575310135}
+  - {fileID: 587618263}
+  ToggleOn:
+  - {fileID: 954235832}
 --- !u!65 &1015615930
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3775,7 +3773,7 @@ GameObject:
   - component: {fileID: 1458521888}
   - component: {fileID: 1458521887}
   m_Layer: 18
-  m_Name: Trigger
+  m_Name: TriggerRespawn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3788,11 +3786,11 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1458521882}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 954235833}
+  m_Father: {fileID: 0}
   m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &1458521884
@@ -3903,10 +3901,12 @@ MonoBehaviour:
     PrefabModifications: []
     SerializationNodes: []
   _udonSharpBackingUdonBehaviour: {fileID: 1458521887}
-  ToggleOff0: {fileID: 255680765}
-  ToggleOff1: {fileID: 1937913900}
-  ToggleOff2: {fileID: 634742429}
-  ToggleOn0: {fileID: 1824846878}
+  ToggleOff:
+  - {fileID: 1606362576}
+  - {fileID: 1575310135}
+  - {fileID: 587618263}
+  ToggleOn:
+  - {fileID: 954235832}
 --- !u!1 &1473847101
 GameObject:
   m_ObjectHideFlags: 0
@@ -4090,7 +4090,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 8
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1575310135
 GameObject:
@@ -4124,7 +4124,7 @@ Transform:
   - {fileID: 1325398002}
   - {fileID: 369265609}
   m_Father: {fileID: 0}
-  m_RootOrder: 7
+  m_RootOrder: 11
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1606362576
 GameObject:
@@ -4158,7 +4158,7 @@ Transform:
   - {fileID: 2092359396}
   - {fileID: 453278021}
   m_Father: {fileID: 0}
-  m_RootOrder: 6
+  m_RootOrder: 10
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1623454738
 GameObject:
@@ -4230,10 +4230,12 @@ MonoBehaviour:
     SerializationNodes: []
   _udonSharpBackingUdonBehaviour: {fileID: 1623454739}
   Destination: {fileID: 2147267809}
-  ToggleOff0: {fileID: 1824846878}
-  ToggleOff1: {fileID: 1937913900}
-  ToggleOff2: {fileID: 634742429}
-  ToggleOn0: {fileID: 255680765}
+  ToggleOff:
+  - {fileID: 954235832}
+  - {fileID: 1606362576}
+  - {fileID: 587618263}
+  ToggleOn:
+  - {fileID: 1575310135}
 --- !u!65 &1623454741
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4550,7 +4552,7 @@ Transform:
   m_LocalScale: {x: 0.2, y: 0.2, z: 0.2}
   m_Children: []
   m_Father: {fileID: 954235833}
-  m_RootOrder: 10
+  m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: -18.820002, z: 0}
 --- !u!1 &1824846878
 GameObject:
@@ -4791,7 +4793,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!64 &1937913901
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -5484,7 +5486,7 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
-    m_TransformParent: {fileID: 954235833}
+    m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 12064677568907025, guid: 4a62e1f5f543492448841b96b02c46eb,
         type: 3}

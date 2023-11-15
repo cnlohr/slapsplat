@@ -11,6 +11,8 @@ Properties {
 	_Gamma ( "gamma", float ) = 1.0
 	_EmissionAmount( "emission amount", float ) = 0.16
 	_Brightness( "brightness", float ) = 1.0
+	[Toggle(_UseSH)] _UseSH( "Use SH", int ) = 0
+	_SHData ("SH Data", 2D) = "white" {}
 }
 
 SubShader {
@@ -35,6 +37,7 @@ SubShader {
 			uniform float _CustomScale;
 			
 			#pragma multi_compile_local _ _EnablePaintSwatch
+			#pragma multi_compile_local _ _UseSH
 
 			struct appdata {
 				UNITY_VERTEX_INPUT_INSTANCE_ID
@@ -58,10 +61,91 @@ SubShader {
 			
 			texture2D< float4 > _GeoData;
 			texture2D< float > _OrderData;
+			texture2D< float4 > _SHData;
 			
 			float _Gamma;
 			float _EmissionAmount;
 			float _Brightness;
+			
+			
+			// Only compute 3 levels of SH.
+			#define myL 3
+			#define myT 
+
+			// https://github.com/kayru/Probulator (Copyright (c) 2015 Yuriy O'Donnell, MIT)
+			float3 shEvaluate(const float3 p, const float3 shvals[16] )
+			{
+				// https://github.com/dariomanesku/cmft/blob/master/src/cmft/cubemapfilter.cpp#L130 (BSD)
+				// * Copyright 2014-2015 Dario Manesku. All rights reserved.
+				// * License: http://www.opensource.org/licenses/BSD-2-Clause
+
+				// From Peter-Pike Sloan's Stupid SH Tricks
+				// http://www.ppsloan.org/publications/StupidSH36.pdf
+
+				const float PI  = 3.1415926535897932384626433832795;
+				const float PIH = 1.5707963267948966192313216916398;
+				const float sqrtPI = 1.7724538509055160272981674833411; //sqrt(PI)
+
+				float3 res = 0;
+
+				float x = -p.x;
+				float y = -p.y;
+				float z = p.z;
+
+				float x2 = x*x;
+				float y2 = y*y;
+				float z2 = z*z;
+
+				float z3 = z2*z;
+
+				float x4 = x2*x2;
+				float y4 = y2*y2;
+				float z4 = z2*z2;
+
+				int i = 0;
+
+				//XXX NOTE: The proper way is to use this conversion, but we already have a better base color parameter.
+				//res =  myT( 1.0f/(2.0f*sqrtPI) ) * shvals[0];
+				res = shvals[0];
+
+				#if (myL >= 1)
+					res += myT(-sqrt(3.0f/(4.0f*PI))*y ) * shvals[1];
+					res += myT( sqrt(3.0f/(4.0f*PI))*z ) * shvals[2];
+					res += myT(-sqrt(3.0f/(4.0f*PI))*x ) * shvals[3];
+				#endif
+
+				#if (myL >= 2)
+					res += myT( sqrt(15.0f/(4.0f*PI))*y*x ) * shvals[4];
+					res += myT(-sqrt(15.0f/(4.0f*PI))*y*z ) * shvals[5];
+					res += myT( sqrt(5.0f/(16.0f*PI))*(3.0f*z2-1.0f) ) * shvals[6];
+					res += myT(-sqrt(15.0f/(4.0f*PI))*x*z ) * shvals[7];
+					res += myT( sqrt(15.0f/(16.0f*PI))*(x2-y2) ) * shvals[8];
+				#endif
+
+				#if (myL >= 3)
+					res += myT(-sqrt( 70.0f/(64.0f*PI))*y*(3.0f*x2-y2) ) * shvals[9];
+					res += myT( sqrt(105.0f/ (4.0f*PI))*y*x*z ) * shvals[10];
+					res += myT(-sqrt( 21.0f/(16.0f*PI))*y*(-1.0f+5.0f*z2) ) * shvals[11];
+					res += myT( sqrt(  7.0f/(16.0f*PI))*(5.0f*z3-3.0f*z) ) * shvals[12];
+					res += myT(-sqrt( 42.0f/(64.0f*PI))*x*(-1.0f+5.0f*z2) ) * shvals[13];
+					res += myT( sqrt(105.0f/(16.0f*PI))*(x2-y2)*z ) * shvals[14];
+					res += myT(-sqrt( 70.0f/(64.0f*PI))*x*(x2-3.0f*y2) ) * shvals[15];
+				#endif
+
+				#if (myL >= 4)
+					res += myT( 3.0f*sqrt(35.0f/(16.0f*PI))*x*y*(x2-y2) ) * shvals[16];
+					res += myT(-3.0f*sqrt(70.0f/(64.0f*PI))*y*z*(3.0f*x2-y2) ) * shvals[17];
+					res += myT( 3.0f*sqrt( 5.0f/(16.0f*PI))*y*x*(-1.0f+7.0f*z2) ) * shvals[18];
+					res += myT(-3.0f*sqrt(10.0f/(64.0f*PI))*y*z*(-3.0f+7.0f*z2) ) * shvals[19];
+					res += myT( (105.0f*z4-90.0f*z2+9.0f)/(16.0f*sqrtPI) ) * shvals[20];
+					res += myT(-3.0f*sqrt(10.0f/(64.0f*PI))*x*z*(-3.0f+7.0f*z2) ) * shvals[21];
+					res += myT( 3.0f*sqrt( 5.0f/(64.0f*PI))*(x2-y2)*(-1.0f+7.0f*z2) ) * shvals[22];
+					res += myT(-3.0f*sqrt(70.0f/(64.0f*PI))*x*z*(x2-3.0f*y2) ) * shvals[23];
+					res += myT( 3.0f*sqrt(35.0f/(4.0f*(64.0f*PI)))*(x4-6.0f*y2*x2+y4) ) * shvals[24];
+				#endif
+
+				return res;
+			}
 
 			
 			float3 Rotate( float3 v, float4 rot )
@@ -167,7 +251,7 @@ SubShader {
 				int prim = inprim;
 				float3 viewDir = -UNITY_MATRIX_IT_MV[2].xyz; // Camera Forward. 
 				float3 viewPos = mul(float4( 0., 0., 0., 1. ), UNITY_MATRIX_IT_MV ).xyz;
-				
+
 				int dir = 0;
 				uint widthOrder = 1, heightOrder;
 				_OrderData.GetDimensions( widthOrder, heightOrder );
@@ -275,13 +359,33 @@ SubShader {
 				
 				vp += AudioLinkData(ALPASS_AUTOCORRELATOR + int2( abs( 128 - glsl_mod(fn*128+ntime*8.0, 256.0) ), 0)).xxx * fnorm * 0.004;
 				
+#if _UseSH
+				//#if defined(USING_STEREO_MATRICES)
+				//	float3 PlayerCenterCamera = ( unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1] ) / 2;
+				//#else
+					float3 PlayerCenterCamera = _WorldSpaceCameraPos.xyz;
+				//#endif
+
+				uint j = 0;
+				float3 shdata[16];
+				float3 centerWorld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2( 0, 0 ), color.a ), 1.0 ) );
+
+				for( j = 0; j < 16; j++ )
+					shdata[j] = _SHData.Load( int3( coord*4+int2(j%4, j/4), 0 ) ) * 4.0 - 2;
+
+				shdata[0] = color; // Use base color.
+				float3 view = PlayerCenterCamera - centerWorld.xyz;
+				view = normalize( view );
 				
+				view = mul( unity_WorldToObject, view );
+				color.rgb = shEvaluate( view, shdata );
+#endif	
+
 				color = pow( color * _Brightness, _Gamma );
 				// Compute emission
 				float bnw = ( color.r + color.g + color.b ) / 3.0;
 				float3 emission = 0.0;//saturate( ( length( saturate((color.rgb - bnw) * float3( 0.1, 0.1, 2.0 )) ) - .3 ) * 100.0 ) * color;
 				emission += color * _EmissionAmount;
-
 				o[0].hitworld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2( -1, -1 ), color.a ), 1.0 ) );
 				o[1].hitworld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2( -1,  1 ), color.a ), 1.0 ) );
 				o[2].hitworld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2(  1, -1 ), color.a ), 1.0 ) );
@@ -423,7 +527,7 @@ SubShader {
 #if _EnablePaintSwatch
 			color *= (1.0-swatch.ggg*6.0); 
 #endif
-			return float4( color, 1.0 );
+			return max( float4( color, 1.0 ), 0 );
 		}
 		ENDCG
 	}

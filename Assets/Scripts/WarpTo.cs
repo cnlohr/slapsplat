@@ -7,10 +7,8 @@ using VRC.Udon;
 public class WarpTo : UdonSharpBehaviour
 {
 	public GameObject Destination;	
-	public GameObject ToggleOff0;
-	public GameObject ToggleOff1;
-	public GameObject ToggleOff2;
-	public GameObject ToggleOn0;
+	public GameObject[] ToggleOff;
+	public GameObject[] ToggleOn;
 
     void Start()
     {
@@ -18,10 +16,14 @@ public class WarpTo : UdonSharpBehaviour
     }
 	public override void Interact()
 	{
-		ToggleOff0.SetActive(false);
-		ToggleOff1.SetActive(false);
-		ToggleOff2.SetActive(false);
-		ToggleOn0.SetActive(true);
+		foreach( GameObject o in ToggleOff )
+		{
+			o.SetActive(false);
+		}
+		foreach( GameObject o in ToggleOn )
+		{
+			o.SetActive(true);
+		}
 	
         Networking.LocalPlayer.TeleportTo(Destination.transform.position, 
                                           Destination.transform.rotation, 

@@ -190,6 +190,8 @@ struct splatIn_t
 	float color[3];
 	float opacity;
 	float rot[4];
+	
+	float colAndSH[48];
 } * splatsIn;
 
 struct splatOut_t
@@ -205,6 +207,9 @@ struct splatOut_t
 	float orsx, orsy, orsz;
 	float orrq, orrx, orry, orrz;
 	float orr, org, orb;
+
+
+	float colAndSH[48];
 } * splatsOut;
 
 typedef struct splatIn_t splatIn;
@@ -225,7 +230,7 @@ int comparSplatOrder(const void* p1, const void* p2)
 	else return 0;
 }
 
-void CommonOutput( const char * ImageAsset, const char * MeshAsset, const char * OrderAsset, float * mins, float * maxs )
+void CommonOutput( const char * ImageAsset, const char * MeshAsset, const char * OrderAsset, const char * SHAsset, float * mins, float * maxs )
 {
 	int v;
 	
@@ -369,6 +374,10 @@ void CommonOutput( const char * ImageAsset, const char * MeshAsset, const char *
 		so->cb = cb;
 		
 		so->nOriginalID = v;
+		
+		int j;
+		for( j = 0; j < 48; j++ )
+			so->colAndSH[j] = si->colAndSH[j];
 	}
 
 	printf( "Loaded %d splats\n", splatsInCount );
@@ -510,6 +519,59 @@ void CommonOutput( const char * ImageAsset, const char * MeshAsset, const char *
 		}
 		WriteUnityImageAsset( OrderAsset, pData, w * h * 4, w, h, 1, UTE_R_FLOAT );
 		free( pData );
+	}
+	
+	if( SHAsset )
+	{
+		// colAndSH is 48 floats.
+		int w = 4096;
+		int h = 4 * ( splatOutCount + (w/4) - 1 ) / (w/4);
+		int size = w * h * sizeof( uint8_t ) * 3;
+		uint8_t * pData = calloc( size, 1 );
+		int x, y;
+		int p = 0;
+		printf( "Output SH dimensions: %d x %d x UTE_RGB24\n", w, h );
+		float minsh = 1e20;
+		float maxsh = -1e20;
+		for( y = 0; y < h; y+=4 )
+		{
+			for( x = 0; x < w; x+=4 )
+			{
+				if( p < splatOutCount)
+				{
+					splatOut * so = &splatsOut[p];
+					uint8_t * bO[4] =
+					{
+						&pData[3*((x+(y+0)*w))],
+						&pData[3*((x+(y+1)*w))],
+						&pData[3*((x+(y+2)*w))],
+						&pData[3*((x+(y+3)*w))]
+					};
+					int j;
+					for( j = 0; j < 16; j++ )
+					{
+						int x;
+						for( x = 0; x < 3; x++ )
+						{
+							float s = so->colAndSH[j*3+x];
+							if( s > maxsh ) maxsh = s;
+							if( s < minsh ) minsh = s;
+							int v = (s + 2) * 64;
+							if( v < 0 ) v = 0;
+							if( v > 255 ) v = 255;
+							bO[j/4][(j%4)*3+x] = v;
+						}
+						
+					}
+				}
+				p++;
+			}
+			//printf( "%d\n", y );
+		}
+		printf( "SH Range: %f %f\n", minsh, maxsh );
+		WriteUnityImageAsset( SHAsset, pData, size, w, h, 1, UTE_RGB24 );
+		free( pData );
+		printf( "Done\n" );
 	}
 }
 
