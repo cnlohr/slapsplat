@@ -133,6 +133,9 @@ int main()
 
 #define UTE_FLAG_IS_3D                   0x10000
 
+#define UTE_FLAG_IS_CHANGE_COLOR_SPACE   0xf00000
+#define UTE_FLAG_IS_CHANGE_COLOR_SPACE_V 20
+
 static inline void WriteUnityImageAsset( const char * filename, void * data, int bytes, int width, int height, int depth, uint32_t flags )
 {
 	FILE * f = fopen( filename, "w" );
@@ -162,7 +165,7 @@ Texture%dD:\n\
     m_WrapV: %d\n\
     m_WrapW: %d\n\
   m_LightmapFormat: 0\n\
-  m_ColorSpace: 0\n\
+  m_ColorSpace: %d\n\
   image data: %d\n\
   _typelessdata: ",
 	(flags&UTE_FLAG_IS_3D)?"!u!117 &11700000":"!u!28 &2800000",
@@ -173,6 +176,7 @@ Texture%dD:\n\
 	!!(flags & UTE_FLAG_FILTER_MODE_CLAMP_U),
 	!!(flags & UTE_FLAG_FILTER_MODE_CLAMP_V),
 	!!(flags & UTE_FLAG_FILTER_MODE_CLAMP_W),
+	(flags & UTE_FLAG_IS_CHANGE_COLOR_SPACE) >> UTE_FLAG_IS_CHANGE_COLOR_SPACE_V,
 	bytes );
 
 	int i;

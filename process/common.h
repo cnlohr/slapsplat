@@ -534,7 +534,7 @@ void CommonOutput( const char * ImageAsset, const char * MeshAsset, const char *
 		float minsh = 1e20;
 		float maxsh = -1e20;
 
-		FILE * fDebug = fopen( "C:\\temp\\debug.txt", "w" );
+		//FILE * fDebug = fopen( "C:\\temp\\debug.txt", "w" );
 
 		for( y = 0; y < h; y+=4 )
 		{
@@ -557,26 +557,30 @@ void CommonOutput( const char * ImageAsset, const char * MeshAsset, const char *
 						for( x = 0; x < 3; x++ )
 						{
 							float s = so->colAndSH[j*3+x];
+
+							float sabs = (s<0)?-s:s;
+							s = sqrtf( sabs ) * ((s<0)?-1:1);
+
 							if( j != 0 )
 							{
 								if( s > maxsh ) maxsh = s;
 								if( s < minsh ) minsh = s;
 							}
-							int v = (j == 0) ? ( (s - 2.0) * 64) : ( (s + .5) * 256);
+							int v = (j == 0) ? ( (s + 2.0) * 64) : ( (s + 0.5) * 255.5);
 							if( v < 0 ) v = 0;
 							if( v > 255 ) v = 255;
 							bO[j/4][(j%4)*3+x] = v;
-							fprintf( fDebug, "%f,", s );
+							//fprintf( fDebug, "%f,", s );
 						}
 					}
 				}
-				fprintf( fDebug, "\n" );
+				//fprintf( fDebug, "\n" );
 				p++;
 			}
 			//printf( "%d\n", y );
 		}
 		printf( "SH Range: %f %f\n", minsh, maxsh );
-		WriteUnityImageAsset( SHAsset, pData, size, w, h, 1, UTE_RGB24 );
+		WriteUnityImageAsset( SHAsset, pData, size, w, h, 1, UTE_RGB24 );// UTE_RGB24  | ( 1 << UTE_FLAG_IS_CHANGE_COLOR_SPACE_V ) );
 		free( pData );
 		printf( "Done\n" );
 	}

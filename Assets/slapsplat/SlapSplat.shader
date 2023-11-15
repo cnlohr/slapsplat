@@ -62,17 +62,20 @@ SubShader {
 			
 			texture2D< float4 > _GeoData;
 			texture2D< float > _OrderData;
-			texture2D< float4 > _SHData;
+			texture2D< float3 > _SHData;
 			
 			float _Gamma;
 			float _EmissionAmount;
 			float _Brightness;
 			float _SHImpact;
 			
+			
+			#if 0
 			// Only compute 3 levels of SH.
 			#define myL 3
 			#define myT
 
+			// XXX XXX XXX THIS APPEARS TO NOT BE USED
 			// https://github.com/kayru/Probulator (Copyright (c) 2015 Yuriy O'Donnell, MIT)
 			float3 shEvaluate(const float3 p, const float3 shvals[16] )
 			{
@@ -151,6 +154,7 @@ SubShader {
 
 				return res;
 			}
+			#endif
 
 			
 			float3 Rotate( float3 v, float4 rot )
@@ -371,21 +375,63 @@ SubShader {
 					float3 PlayerCenterCamera = _WorldSpaceCameraPos.xyz;
 				//#endif
 
-				uint j = 0;
 				float3 shdata[16];
-				float3 centerWorld = mul( unity_ObjectToWorld, float4( Transform( vp.xyz, scale, rot, float2( 0, 0 ), color.a ), 1.0 ) );
-
-				for( j = 1; j < 16; j++ )
-					shdata[j] = _SHData.Load( int3( coord*4+int2(j%4, j/4), 0 ) ) - 0.5;
-
-				shdata[0] = color; // Use base color.
-
-				float3 view = centerWorld.xyz - PlayerCenterCamera;
-				view = normalize( view );
+				uint j = 0;
+				for( j = 0; j < 16; j++ )
+				{
+					float3 v = ( _SHData.Load( int3( coord*4+int2( j%4, j/4), 0 ) ));
+					v = v * 1.0;
+					v = v - 0.5;
+					v = sign(v) * v * v;
+					shdata[j] = v * _SHImpact;
+				}
 				
-				view = mul( unity_WorldToObject, view );
-				color.rgb = shEvaluate( view, shdata );
-				//color.rgb = (abs( shdata[7] ) );
+				float3 centerWorld = mul( unity_ObjectToWorld, float4( vp.xyz, 1.0 ) );
+				float3 ddir = centerWorld.xyz - PlayerCenterCamera;
+				ddir = mul( unity_WorldToObject, ddir );
+				//ddir = ddir.yxz * float3( 1.0, -1.0, 1.0 );
+				ddir = normalize( ddir );
+
+				#define readSH( x, y ) shdata[y+1]
+				
+				//ivec2 shIndex = ivec2((index << 4u) & INDEX_MASK, index >> (INDEX_SHIFT - 4u));
+				float3 sh10 = readSH(shIndex, 0);
+				float3 sh11 = readSH(shIndex, 1);
+				float3 sh12 = readSH(shIndex, 2);
+				float3 sh20 = readSH(shIndex, 3);
+				float3 sh21 = readSH(shIndex, 4);
+				float3 sh22 = readSH(shIndex, 5);
+				float3 sh23 = readSH(shIndex, 6);
+				float3 sh24 = readSH(shIndex, 7);
+				float3 sh30 = readSH(shIndex, 8);
+				float3 sh31 = readSH(shIndex, 9);
+				float3 sh32 = readSH(shIndex, 10);
+				float3 sh33 = readSH(shIndex, 11);
+				float3 sh34 = readSH(shIndex, 12);
+				float3 sh35 = readSH(shIndex, 13);
+				float3 sh36 = readSH(shIndex, 14);
+				// Formula and constants from
+				// https://github.com/graphdeco-inria/diff-gaussian-rasterization/blob/59f5f77e3ddbac3ed9db93ec2cfe99ed6c5d121d/cuda_rasterizer/forward.cu and
+				// https://github.com/graphdeco-inria/diff-gaussian-rasterization/blob/59f5f77e3ddbac3ed9db93ec2cfe99ed6c5d121d/cuda_rasterizer/auxiliary.h
+				// See also https://en.wikipedia.org/wiki/Table_of_spherical_harmonics
+				float3 shcontrib = -0.4886025119029199f * ddir.y * sh10                                                                       //
+						   + 0.4886025119029199f * ddir.z * sh11                                                                      //
+						   + -0.4886025119029199f * ddir.x * sh12                                                                     //
+						   + 1.0925484305920792f * ddir.x * ddir.y * sh20                                                              //
+						   + -1.0925484305920792f * ddir.y * ddir.z * sh21                                                             //
+						   + 0.31539156525252005f * (2.0 * ddir.z * ddir.z - ddir.x * ddir.x - ddir.y * ddir.y) * sh22                     //
+						   + -1.0925484305920792f * ddir.x * ddir.z * sh23                                                             //
+						   + 0.5462742152960396f * (ddir.x * ddir.x - ddir.y * ddir.y) * sh24                                            //
+						   + -0.5900435899266435f * ddir.y * (3.0 * ddir.x * ddir.x - ddir.y * ddir.y) * sh30                             //
+						   + 2.890611442640554f * ddir.x * ddir.y * ddir.z * sh31                                                       //
+						   + -0.4570457994644658f * ddir.y * (4.0 * ddir.z * ddir.z - ddir.x * ddir.x - ddir.y * ddir.y) * sh32             //
+						   + 0.3731763325901154f * ddir.z * (2.0 * ddir.z * ddir.z - 3.0 * ddir.x * ddir.x - 3.0 * ddir.y * ddir.y) * sh33  //
+						   + -0.4570457994644658f * ddir.x * (4.0 * ddir.z * ddir.z - ddir.x * ddir.x - ddir.y * ddir.y) * sh34             //
+						   + 1.445305721320277f * ddir.z * (ddir.x * ddir.x - ddir.y * ddir.y) * sh35                                     //
+						   + -0.5900435899266435f * ddir.x * (ddir.x * ddir.x - 3.0 * ddir.y * ddir.y) * sh36                             //
+				  ;
+				  				
+				color.rgb += shcontrib.rgb;
 #endif	
 
 				color = pow( color * _Brightness, _Gamma );

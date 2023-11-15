@@ -198,8 +198,10 @@ int main( int argc, char ** argv )
 		int i;
 		for( i = 0; i < 45; i++ )
 		{
+			// EVIL EVIL EVIL EVIL
+			// They interleved the spherical harmonics.
 			if( offsetList.rests[i] >= 0 )
-				si->colAndSH[i+3] = buffer[ offsetList.rests[i] ];
+				si->colAndSH[i+3] = buffer[ offsetList.rests[(i%3)*15 + (i/3)] ];
 		}
 		si->colAndSH[0] = buffer[ offsetList.color[0] ];
 		si->colAndSH[1] = buffer[ offsetList.color[1] ];
