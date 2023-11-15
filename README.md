@@ -28,9 +28,10 @@ We create 3 textures to render from:
  * place .ply files from polycam, etc. you want to use in there.
 
 ```
-Usage: resplat2 [.ply file] [out, .ply file] [out, .asset image file] [out, .asset mesh file] [out, .asset image cardinal sort file]
+Usage: resplat2 [.ply file] [out, .ply file] [out, .asset image file] [out, .asset mesh file] [out, .asset image cardinal sort file] [out, OPTIONAL .asset for SH data]
 The out assets are optional. But if one is specified all must be specified.  Otherwise it only takes in a polycam .ply, and outputs a .ply mesh with vertex colors.
 ```
+Note: SH Data is used to light splats nonuniformly.  I.e. for shiny surfaces, etc.  To use SH Data, you must check a checkbox indicating you want to use the SH data, as well as drop the SH data in.  It will approximately double the size of the splat for download.
 
 ### Optionally edit your out ply file.
 
