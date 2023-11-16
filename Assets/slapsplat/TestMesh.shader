@@ -23,7 +23,7 @@ SubShader {
 
 			struct v2g {
 				int nv : ID;
-				UNITY_VERTEX_INPUT_INSTANCE_ID
+				UNITY_VERTEX_OUTPUT_STEREO
 			};
 			
 			struct g2f {
