@@ -47,28 +47,35 @@
             struct v2g
             {
 				int nv : ID;
+                float4 vertex : POSITION;
+                float2 uv : UV;
 				UNITY_VERTEX_OUTPUT_STEREO
             };
 			
 			struct g2f
 			{
+                float2 uv : UV;
 				nointerpolation float4 payload[30] : IDS;
 			};
 
             float4 _MainTex_ST;
 
-            v2f vert (appdata v)
+            v2g vert (appdata v)
             {
-                v2f o;
+                v2g o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = v.uv;
                 UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
             }
-			
-			v2g geo(
 
-            fixed4 frag (v2f i) : SV_Target
+			[maxvertexcount(4)]
+			void geo(point v2g p[1], inout TriangleStream<g2f> stream, uint inprim : SV_PrimitiveID )
+			{
+				return;
+			}
+
+            fixed4 frag (g2f i) : SV_Target
             {
                 // sample the texture
 				float2 uvsec = i.uv * float2( 4.0, 2.0 );

@@ -200,7 +200,7 @@ struct splatOut_t
 	uint8_t sx, sy, sz;
 	int8_t rx, ry, rz; // rq is shadowed.
 	uint8_t cr, cg, cb;
-	int8_t reserved0;
+	int8_t alpha;
 	
 	int nOriginalID; // Not included in general payload to textures.
 	float orx, ory, orz;
@@ -373,6 +373,9 @@ void CommonOutput( const char * ImageAsset, const char * MeshAsset, const char *
 		so->cg = cg;
 		so->cb = cb;
 		
+		int op = si->opacity * 256;
+		so->alpha = op;
+		
 		so->nOriginalID = v;
 		
 		int j;
@@ -415,7 +418,7 @@ void CommonOutput( const char * ImageAsset, const char * MeshAsset, const char *
 				bO[12] = so->cr;
 				bO[13] = so->cg;
 				bO[14] = so->cb;
-				bO[15] = so->reserved0;
+				bO[15] = so->alpha;
 			}
 			p++;
 		}

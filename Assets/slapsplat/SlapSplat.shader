@@ -12,8 +12,12 @@ Properties {
 	_EmissionAmount( "emission amount", float ) = 0.16
 	_Brightness( "brightness", float ) = 1.0
 	[Toggle(_UseSH)] _UseSH( "Use SH", int ) = 0
+	[Toggle(_SHLocal)] _SHLocal ("SH Per Pixel", int) = 0
 	_SHData ("SH Data", 2D) = "white" {}
 	_SHImpact ("SH Impact", float ) = 0.125
+	[Toggle(_Obeloid)] _Obeloid( "Obeloid", int ) = 0
+	_AlphaCull ("Alpha Cull", float ) = 0.1
+	_ColorCull ("Color Cull", float ) = 0.1
 }
 
 SubShader {	
@@ -23,39 +27,84 @@ SubShader {
 		Cull Off
 		CGPROGRAM
 
+		#pragma multi_compile_local _ _EnablePaintSwatch
+		#pragma multi_compile_local _ _UseSH
+		#pragma multi_compile_local _ _Obeloid
+		#pragma multi_compile_local _ _SHLocal
+		
 		#include "slapsplat.cginc"
 		
 		#pragma vertex VertexProgram
 		#pragma geometry GeometryProgram
-		#pragma fragment frag
+		
+		// earlydepthsensor needed for obeloids, note: We could do edge fuzz with the 'alpha' flag.
+		#pragma fragment frag earlydepthstencil
+
 		#pragma target 5.0
 		#pragma multi_compile_fwdadd_fullshadows
 
 		sampler2D _Swatch;
 		
+				
+		#ifdef _Obeloid
+		float4 frag(g2f i, out float outDepth : SV_DepthLessEqual ) : SV_Target
+		#else
 		float4 frag(g2f i ) : SV_Target
+		#endif
 		{
-
 			UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX( i );
 			
-#if _EnablePaintSwatch
-			float4 swatch = tex2D( _Swatch, i.tc.xy / 2.0 + 0.5 );
-			float fakeAlpha = 0.58 - swatch.b;
-#else
-			float squircleness = 2.2;
-			float2 tc = abs( i.tc.xy );
-			float inten = 1.1 - ( pow( tc.x, squircleness ) + pow( tc.y, squircleness ) ) / 1.1;
-			inten *= i.color.a;
-			inten *= 1.7;
-			float fakeAlpha = saturate( inten*10.0 - 3.0 );// - chash13( float3( _Time.y, i.tc.xy ) * 100.0 );
+			float4 swatch = 1.0;
+			float fakeAlpha = 1.0;
+			
+			#if _Obeloid		
+			#else
+				#if _EnablePaintSwatch
+							swatch = tex2D( _Swatch, i.tc.xy / 2.0 + 0.5 );
+							fakeAlpha = 0.58 - swatch.b;
+				#else
+							float squircleness = 2.2;
+							float2 tc = abs( i.tc.xy );
+							float inten = 1.1 - ( pow( tc.x, squircleness ) + pow( tc.y, squircleness ) ) / 1.1;
+							inten *= i.color.a;
+							inten *= 1.7;
+							fakeAlpha = saturate( inten*10.0 - 3.0 );// - chash13( float3( _Time.y, i.tc.xy ) * 100.0 );
+				#endif
+			#endif
+
+
+			float3 color;
+			#if _Obeloid
+			float3 hitworld;
+			float3 hitlocal;
+			fakeAlpha = ObeloidCalc( i, hitlocal, hitworld );
+			color.rgb = i.color;
+			clip( fakeAlpha - 0.5 );
+
+#if _SHLocal
+			uint width = 1, height;
+			_GeoData.GetDimensions( width, height );
+			uint2 coord = uint2( i.id % width, i.id / width );
+			float3 shalt = shEvaluate( hitlocal, coord );
+			color.rgb += shalt;
 #endif
 			
+			//Charles way.
+			float4 clipPos = mul(UNITY_MATRIX_VP, float4(hitworld, 1.0));
+			outDepth = clipPos.z / clipPos.w;
+
+
+			#else
 			clip( fakeAlpha - 0.5 );
-			float3 color = pow( i.color.rgb, 1.4 );
-			
-			#if 1
-			
+			color = pow( i.color.rgb, 1.4 );
 			float4 clipPos = mul(UNITY_MATRIX_VP, i.hitworld );
+			#endif
+			
+			
+			#if 1 // Shadows, etc.
+			
+			float attenuation = 1.0;
+
 			struct shadowonly
 			{
 				float4 pos;
@@ -64,9 +113,10 @@ SubShader {
 			} so;
 			so._LightCoord = 0.;
 			so.pos = clipPos;
-			so._ShadowCoord  = 0;
+			so._ShadowCoord = 0;
 			UNITY_TRANSFER_SHADOW( so, 0. );
-			float attenuation = LIGHT_ATTENUATION( so );
+			attenuation = LIGHT_ATTENUATION( so );
+		
 
 			if( 1 )
 			{
@@ -108,6 +158,11 @@ SubShader {
 		//AlphaToMask On , out uint mask : SV_Coverage
 		CGPROGRAM
 
+		#pragma multi_compile_local _ _EnablePaintSwatch
+		#pragma multi_compile_local _ _UseSH
+		#pragma multi_compile_local _ _Obeloid
+
+
 		#include "slapsplat.cginc"
 
 		#pragma vertex VertexProgram
@@ -116,22 +171,55 @@ SubShader {
 		#pragma target 5.0
 
 		sampler2D _Swatch;
+		
+		#if _Obeloid
+		
+			struct shadowHelper
+			{
+				float4 vertex;
+				float3 normal;
+				V2F_SHADOW_CASTER;
+			};
+
+			float4 colOut(shadowHelper data)
+			{
+				SHADOW_CASTER_FRAGMENT(data);
+			}
+
+		#endif
 
 		float4 frag(g2f i ) : SV_Target
 		{
 			UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX( i );
+			
+			float fakeAlpha;
+			#if _Obeloid
+				float3 hitworld;
+				float3 hitlocal;
+				fakeAlpha = ObeloidCalc( i, hitlocal, hitworld );
+				clip( fakeAlpha - 0.5 );
+				float4 clipPos = mul(UNITY_MATRIX_VP, float4(hitworld, 1.0));
+				
+				//D4rkPl4y3r's shadow technique		
+				float3 s0 = i.localpos; // Center of obeloid.
+				shadowHelper v;
+				v.vertex = mul(unity_WorldToObject, float4(hitworld, 1));
+				v.normal = normalize(mul((float3x3)unity_WorldToObject, hitworld - s0));
+				TRANSFER_SHADOW_CASTER_NOPOS(v, clipPos);
+			#else			
+				#if _EnablePaintSwatch
+					float4 swatch = tex2D( _Swatch, i.tc.xy / 2.0 + 0.5 );
+					fakeAlpha = .58 - swatch.b;
+				#else
+					float squircleness = 2.2;
+					float2 tc = abs( i.tc.xy );
+					float inten = 1.1 - ( pow( tc.x, squircleness ) + pow( tc.y, squircleness ) ) / 1.1;
+					inten *= i.color.a;
+					inten *= 1.7;
+					fakeAlpha = saturate( inten*10.0 - 3.0 );// - chash13( float3( _Time.y, i.tc.xy ) * 100.0 );
+				#endif
+			#endif
 
-#if _EnablePaintSwatch
-			float4 swatch = tex2D( _Swatch, i.tc.xy / 2.0 + 0.5 );
-			float fakeAlpha = .58 - swatch.b;
-#else
-			float squircleness = 2.2;
-			float2 tc = abs( i.tc.xy );
-			float inten = 1.1 - ( pow( tc.x, squircleness ) + pow( tc.y, squircleness ) ) / 1.1;
-			inten *= i.color.a;
-			inten *= 1.7;
-			float fakeAlpha = saturate( inten*10.0 - 3.0 );// - chash13( float3( _Time.y, i.tc.xy ) * 100.0 );
-#endif
 
 			clip( fakeAlpha - 0.5 );
 			//mask = ( 1u << ((uint)(fakeAlpha*GetRenderTargetSampleCount() + 0.5)) ) - 1;
