@@ -33,7 +33,11 @@ The out assets are optional. But if one is specified all must be specified.  Oth
 ```
 Note: SH Data is used to light splats nonuniformly.  I.e. for shiny surfaces, etc.  To use SH Data, you must check a checkbox indicating you want to use the SH data, as well as drop the SH data in.  It will approximately double the size of the splat for download.
 
+You can freely rotate/scale/translate your object once in Unity.
+
 ### Optionally edit your out ply file.
+
+**We currently advise you DO NOT do this, since it will prevent usage of SH's and is incompatible with obloid usage**
 
 The `out, .ply file` is a regular PLY mesh.  You can edit it freely in blender for instance and rexport then use `geotoasset.exe` to create the image, mesh and sort files for the rest of the pipeline.
 
