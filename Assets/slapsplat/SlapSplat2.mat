@@ -99,7 +99,7 @@ Material:
     - _SHLocal: 0
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
-    - _Squircle: 0.1
+    - _Squircle: 0.002
     - _SrcBlend: 1
     - _UVSec: 0
     - _UseSH: 0
