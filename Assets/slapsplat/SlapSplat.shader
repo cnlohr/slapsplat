@@ -18,6 +18,7 @@ Properties {
 	[Toggle(_Obeloid)] _Obeloid( "Obeloid", int ) = 0
 	_AlphaCull ("Alpha Cull", float ) = 0.1
 	_ColorCull ("Color Cull", float ) = 0.1
+	_Squircle( "Square Override", float ) = 0.0
 }
 
 SubShader {	
@@ -57,8 +58,7 @@ SubShader {
 			float4 swatch = 1.0;
 			float fakeAlpha = 1.0;
 			
-			#if _Obeloid		
-			#else
+			#if !_Obeloid		
 				#if _EnablePaintSwatch
 							swatch = tex2D( _Swatch, i.tc.xy / 2.0 + 0.5 );
 							fakeAlpha = 0.58 - swatch.b;
@@ -75,25 +75,23 @@ SubShader {
 
 			float3 color;
 			#if _Obeloid
-			float3 hitworld;
-			float3 hitlocal;
-			fakeAlpha = ObeloidCalc( i, hitlocal, hitworld );
-			color.rgb = i.color;
-			clip( fakeAlpha - 0.5 );
+				float3 hitworld;
+				float3 hitlocal;
+				fakeAlpha = ObeloidCalc( i, hitlocal, hitworld );
+				color.rgb = i.color;
+				clip( fakeAlpha - 0.5 );
 
-#if _SHLocal
-			uint width = 1, height;
-			_GeoData.GetDimensions( width, height );
-			uint2 coord = uint2( i.id % width, i.id / width );
-			float3 shalt = shEvaluate( hitlocal, coord );
-			color.rgb += shalt;
-#endif
-			
-			//Charles way.
-			float4 clipPos = mul(UNITY_MATRIX_VP, float4(hitworld, 1.0));
-			outDepth = clipPos.z / clipPos.w;
-
-
+				#if _SHLocal
+					uint width = 1, height;
+					_GeoData.GetDimensions( width, height );
+					uint2 coord = uint2( i.id % width, i.id / width );
+					float3 shalt = shEvaluate( hitlocal, coord );
+					color.rgb += shalt;
+				#endif
+				
+				//Charles way.
+				float4 clipPos = mul(UNITY_MATRIX_VP, float4(hitworld, 1.0));
+				outDepth = clipPos.z / clipPos.w;
 			#else
 			clip( fakeAlpha - 0.5 );
 			color = pow( i.color.rgb, 1.4 );
@@ -142,7 +140,7 @@ SubShader {
 			color *= ( attenuation ) * _LightColor0 + i.emission.rgb; 
 			#endif
 			
-#if _EnablePaintSwatch
+#if _EnablePaintSwatch && !_Obeloid
 			color *= (1.0-swatch.ggg*6.0); 
 #endif
 			return max( float4( color, 1.0 ), 0 );
@@ -188,10 +186,14 @@ SubShader {
 
 		#endif
 
-		float4 frag(g2f i ) : SV_Target
+#if _Obeloid
+		float4 frag(g2f i, out float outDepth : SV_DepthLessEqual ) : SV_Target
+#else
+		float4 frag(g2f i) : SV_Target
+#endif
 		{
 			UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX( i );
-			
+			float4 swatch = 0.0;
 			float fakeAlpha;
 			#if _Obeloid
 				float3 hitworld;
@@ -206,9 +208,11 @@ SubShader {
 				v.vertex = mul(unity_WorldToObject, float4(hitworld, 1));
 				v.normal = normalize(mul((float3x3)unity_WorldToObject, hitworld - s0));
 				TRANSFER_SHADOW_CASTER_NOPOS(v, clipPos);
+
+				outDepth = clipPos.z / clipPos.w;
 			#else			
-				#if _EnablePaintSwatch
-					float4 swatch = tex2D( _Swatch, i.tc.xy / 2.0 + 0.5 );
+				#if _EnablePaintSwatch && !_Obeloid
+					swatch = tex2D( _Swatch, i.tc.xy / 2.0 + 0.5 );
 					fakeAlpha = .58 - swatch.b;
 				#else
 					float squircleness = 2.2;
