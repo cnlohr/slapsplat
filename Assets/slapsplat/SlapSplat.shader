@@ -16,8 +16,8 @@ Properties {
 	_SHData ("SH Data", 2D) = "white" {}
 	_SHImpact ("SH Impact", float ) = 0.125
 	[Toggle(_Obeloid)] _Obeloid( "Obeloid", int ) = 0
-	_AlphaCull ("Alpha Cull", float ) = 0.1
-	_ColorCull ("Color Cull", float ) = 0.1
+	_AlphaCull ("Alpha Cull", float ) = 0.0
+	_ColorCull ("Color Cull", float ) = 0.0
 	_Squircle( "Square Override", float ) = 0.0
 }
 
@@ -60,15 +60,14 @@ SubShader {
 			
 			#if !_Obeloid		
 				#if _EnablePaintSwatch
-							swatch = tex2D( _Swatch, i.tc.xy / 2.0 + 0.5 );
-							fakeAlpha = 0.58 - swatch.b;
+					swatch = tex2D( _Swatch, i.tc.xy / 2.0 + 0.5 );
+					fakeAlpha = 0.58 - swatch.b;
 				#else
-							float squircleness = 2.2;
-							float2 tc = abs( i.tc.xy );
-							float inten = 1.1 - ( pow( tc.x, squircleness ) + pow( tc.y, squircleness ) ) / 1.1;
-							inten *= i.color.a;
-							inten *= 1.7;
-							fakeAlpha = saturate( inten*10.0 - 3.0 );// - chash13( float3( _Time.y, i.tc.xy ) * 100.0 );
+					float squircleness = 2.2;
+					float2 tc = abs( i.tc.xy );
+					float inten = 1.1 - ( pow( tc.x, squircleness ) + pow( tc.y, squircleness ) ) / 1.1;
+					inten *= 1.7;
+					fakeAlpha = saturate( inten*10.0 - 3.0 );// - chash13( float3( _Time.y, i.tc.xy ) * 100.0 );
 				#endif
 			#endif
 
@@ -97,7 +96,6 @@ SubShader {
 			color = pow( i.color.rgb, 1.4 );
 			float4 clipPos = mul(UNITY_MATRIX_VP, i.hitworld );
 			#endif
-			
 			
 			#if 1 // Shadows, etc.
 			
